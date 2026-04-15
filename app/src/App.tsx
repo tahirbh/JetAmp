@@ -176,6 +176,11 @@ function App() {
       audioElementRef.current.pause();
     }
 
+    if (!track.url) {
+      console.warn('Track URL is missing. This usually happens after a refresh. Please re-load your folder.');
+      return;
+    }
+
     const audio = new Audio(track.url);
     audio.crossOrigin = 'anonymous';
     audio.preload = 'auto';
@@ -216,11 +221,16 @@ function App() {
       await audioContextRef.current.resume();
     }
     
-    if (!currentTrack && playlist.length > 0) {
-      await loadTrack(playlist[0]);
+    if (audioElementRef.current && !audioElementRef.current.src) {
+       console.warn('No audio source loaded. Attempting to reload first track.');
+       if (playlist.length > 0) await loadTrack(playlist[0]);
     }
     
-    audioElementRef.current?.play().catch(console.error);
+    try {
+      await audioElementRef.current?.play();
+    } catch (e) {
+      console.error('Playback failed:', e);
+    }
   }, [currentTrack, playlist, loadTrack]);
 
   // Pause
