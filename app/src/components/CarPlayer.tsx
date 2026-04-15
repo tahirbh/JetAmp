@@ -68,31 +68,37 @@ export function CarPlayer({
         </div>
       </div>
 
-      {/* 2. MIDDLE ROW: Content Area (Safe vertical space) */}
-      <div className="w-full flex flex-col items-center justify-center gap-1 sm:gap-4 px-4 py-1 min-h-0 overflow-hidden">
+      {/* 2. MIDDLE ROW: Content Area (Text-Over-CD Overlay) */}
+      <div className="w-full flex items-center justify-center px-4 -mt-4 mb-2 min-h-0 relative">
         
-        {/* Track Info - Ultra-compact for 7-inch height */}
-        <div className="text-center w-full px-4 flex-shrink-0 animate-in fade-in duration-700">
-          <h2 className="text-xs sm:text-lg lg:text-3xl font-black rainbow-text truncate marquee-on-hover px-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
-            {currentTrack?.title || 'No Track Selected'}
-          </h2>
-          <p className="text-[7px] sm:text-[9px] lg:text-sm text-gray-400 font-bold glow-text-white/70 truncate tracking-[0.4em] uppercase">
-            {currentTrack?.artist || 'Select a track from menu'}
-          </p>
-        </div>
+        {/* Layered Content Container */}
+        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[300px] aspect-square">
+          
+          {/* Layer 1: Rotating CD (Behind) */}
+          <div className="z-10 w-full h-full flex items-center justify-center">
+            <RotatingCD
+              coverUrl={currentTrack?.cover}
+              isPlaying={isPlaying}
+              size={undefined} 
+            />
+          </div>
 
-        {/* Rotating CD - Guaranteed no overlap with text and centered */}
-        <div className="rotating-cd-container transition-all duration-700 hover:scale-[1.02] z-10 flex-shrink min-h-0 max-h-[190px] aspect-square">
-          <RotatingCD
-            coverUrl={currentTrack?.cover}
-            isPlaying={isPlaying}
-            size={undefined} 
-          />
+          {/* Layer 2: Track Info Overlay (Front & Centered) */}
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center pointer-events-none px-6">
+            <div className="bg-black/20 backdrop-blur-[2px] p-4 rounded-full border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+              <h2 className="text-xs sm:text-xl lg:text-3xl font-black rainbow-text truncate max-w-[200px] sm:max-w-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                {currentTrack?.title || 'No Track Selected'}
+              </h2>
+              <p className="text-[6px] sm:text-[9px] lg:text-sm text-white font-bold glow-text-white/80 truncate tracking-[0.3em] uppercase mt-1">
+                {currentTrack?.artist || 'Select a track'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 3. BOTTOM ROW: Transport Controls & Progress (Scaled) */}
-      <div className="flex flex-col bg-[var(--bg-dark)]/95 backdrop-blur-md border-t border-[var(--metal-dark)]/50 -mx-4 px-4 pb-2 shadow-[0_-5px_15px_rgba(0,0,0,0.6)] z-20">
+      {/* 3. BOTTOM ROW: Ultra-Transparent Transport Controls */}
+      <div className="flex flex-col bg-transparent backdrop-blur-none -mx-4 px-4 pb-2 z-20 relative -mt-8">
         
         {/* Progress Bar Container - Ultra Tight */}
         <div className="w-full max-w-lg self-center px-4 flex-shrink-0 mt-0.5 mb-0.5">

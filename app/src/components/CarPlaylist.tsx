@@ -41,45 +41,7 @@ export function CarPlaylist({
 
   return (
     <div className="flex flex-col h-full glass-panel">
-      {/* Header */}
-      <div className="p-3 border-b border-[var(--metal-dark)]">
-        <div className="flex items-center gap-2 mb-2">
-          <Disc className="w-5 h-5 text-[var(--glow-cyan)]" />
-          <h3 className="text-lg font-bold glow-text-cyan">Playlist</h3>
-          <span className="text-xs text-gray-500 ml-auto">
-            {filteredTracks.length} / {tracks.length}
-          </span>
-        </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search tracks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 bg-[var(--bg-dark)] rounded-lg text-sm text-white placeholder-gray-500 border border-[var(--metal-dark)] focus:border-[var(--glow-cyan)] focus:outline-none transition-colors"
-          />
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex gap-1 mt-2">
-          {(['all', 'artist', 'album'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-2 py-1 text-[10px] uppercase rounded transition-colors ${
-                filter === f 
-                  ? 'bg-[var(--glow-cyan)] text-black font-bold' 
-                  : 'bg-[var(--metal-dark)] text-gray-400 hover:text-white'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Track List */}
       <div className="flex-1 overflow-y-auto">
