@@ -1,0 +1,110 @@
+/* ===== CAR-OPTIMIZED RESPONSIVE LAYOUT ===== */
+
+/* Base layout - Mobile Portrait (default) */
+.car-layout {
+  flex-direction: column;
+}
+
+.car-player-section {
+  width: 100%;
+  height: 50vh;
+}
+
+.car-playlist-section {
+  width: 100%;
+  height: 50vh;
+  border-top: 2px solid var(--metal-dark);
+}
+
+/* Tablet Landscape / Small screens */
+@media (min-width: 640px) and (orientation: landscape) {
+  .car-layout {
+    flex-direction: row;
+  }
+  
+  .car-player-section {
+    width: 50%;
+    height: 100vh;
+  }
+  
+  .car-playlist-section {
+    width: 50%;
+    height: 100vh;
+    border-top: none;
+    border-left: 2px solid var(--metal-dark);
+  }
+}
+
+/* 7-8 inch Car Android screens (1024x600 typical) */
+@media (min-width: 768px) {
+  .car-layout {
+    flex-direction: row;
+  }
+  
+  .car-player-section {
+    width: 50%;
+    height: 100vh;
+  }
+  
+  .car-playlist-section {
+    width: 50%;
+    height: 100vh;
+    border-top: none;
+    border-left: 2px solid var(--metal-dark);
+  }
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
+  .car-player-section {
+    max-width: 600px;
+  }
+  
+  .car-playlist-section {
+    flex: 1;
+  }
+}
+
+/* Touch-friendly sizing for car use */
+@media (pointer: coarse) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -10px;
+  }
+  
+  input[type="range"]::-webkit-slider-track {
+    height: 12px;
+  }
+  
+  .glow-btn {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/* Prevent text selection for car touch interface */
+.car-layout {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Smooth scrolling for playlist */
+.car-playlist-section {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep functionality */
+.car-playlist-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.car-playlist-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.car-playlist-section::-webkit-scrollbar-thumb {
+  background: var(--metal-mid);
+  border-radius: 2px;
+}
