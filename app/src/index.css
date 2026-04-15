@@ -410,11 +410,13 @@ input[type="range"][style*="writing-mode: vertical-lr"]::-webkit-slider-thumb {
   background-size: 100% 20px;
 }
 
-.rainbow-line-horizontal {
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(90deg, transparent, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, transparent);
-  opacity: 0.2;
+
+/* Hide speakers on short screens (Mobile Landscape) to prioritize Player/Playlist */
+@media (max-height: 500px) {
+  .speaker-column {
+    display: none !important;
+  }
 }
+
 
 

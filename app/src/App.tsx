@@ -431,7 +431,7 @@ function App() {
       <div className="flex-1 flex car-layout">
         
         {/* Column 1: Speaker Left - Responsive Width */}
-        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50">
+        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
           <Speaker 
             side="left" 
             isPlaying={isPlaying} 
@@ -483,7 +483,7 @@ function App() {
         </div>
 
         {/* Column 4: Speaker Right - Responsive Width */}
-        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden">
+        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden speaker-column">
           <Speaker 
             side="right" 
             isPlaying={isPlaying} 

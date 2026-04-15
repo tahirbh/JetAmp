@@ -94,9 +94,9 @@ export function CarPlayer({
       {/* 3. BOTTOM ROW: Transport Controls & Progress (Scaled) */}
       <div className="flex flex-col bg-[var(--bg-dark)]/95 backdrop-blur-md border-t border-[var(--metal-dark)]/50 -mx-4 px-4 pb-2 shadow-[0_-5px_15px_rgba(0,0,0,0.6)] z-20">
         
-        {/* Progress Bar Container - Tightened */}
-        <div className="w-full max-w-lg self-center px-4 flex-shrink-0 mt-1 mb-0.5">
-          <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-mono text-gray-400 scale-90">
+        {/* Progress Bar Container - Ultra Tight */}
+        <div className="w-full max-w-lg self-center px-4 flex-shrink-0 mt-0.5 mb-0.5">
+          <div className="flex items-center justify-between text-[7px] sm:text-[10px] font-mono text-gray-400 scale-75 sm:scale-90">
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
@@ -107,12 +107,12 @@ export function CarPlayer({
             step="1"
             value={currentTime}
             onChange={(e) => onSeek(parseFloat(e.target.value))}
-            className="w-full h-1 my-0.5 opacity-80"
+            className="w-full h-0.5 my-0.5 opacity-60"
           />
         </div>
 
-        {/* Transport Controls - COMPACT SCALING for 7-inch displays */}
-        <div className="flex items-center justify-center gap-1 sm:gap-4 md:gap-6 flex-shrink-0 scale-[0.6] sm:scale-[0.75] lg:scale-100 origin-center transition-transform duration-300 py-0.5">
+        {/* Transport Controls - COMPACT SCALING for Smartphones */}
+        <div className="flex items-center justify-center gap-1 sm:gap-4 md:gap-6 flex-shrink-0 scale-[0.55] sm:scale-[0.75] 2xl:scale-100 origin-center transition-transform duration-300 py-0 pb-1">
           <button
             onClick={onToggleShuffle}
             className={`glow-btn p-3 rounded-full transition-all duration-300 ${shuffleMode ? 'bg-[var(--glow-cyan)]/20 text-[var(--glow-cyan)]' : 'text-gray-400'}`}
