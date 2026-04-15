@@ -42,10 +42,11 @@
 
 @layer base {
   * {
-    @apply border-[var(--metal-dark)];
+    border-color: var(--metal-dark);
   }
   body {
-    @apply bg-[var(--bg-dark)] text-white;
+    background-color: var(--bg-dark);
+    color: white;
     font-family: 'Rajdhani', sans-serif;
     overflow: hidden;
   }
