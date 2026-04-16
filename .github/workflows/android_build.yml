@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -24,10 +24,12 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Verify Paths
+      - name: Verify Environment
         run: |
           pwd
-          ls -R
+          ls -F
+          node -v
+          npm -v
 
       - name: Install Dependencies
         working-directory: app
@@ -35,10 +37,15 @@ jobs:
 
       - name: Build Web App
         working-directory: app
-        run: npm run build
+        run: |
+          npm run build
+          echo "Verified dist contents:"
+          ls -R dist
 
       - name: Capacitor Sync
         working-directory: app
+        env:
+          DEBUG: 'capacitor:*'
         run: npx cap sync android --verbose
 
       - name: Build APK with Gradle
