@@ -9,6 +9,7 @@ interface EqualizerProps {
   currentVolume?: number;
   isFullScreen?: boolean;
   onBack?: () => void;
+  getVisualizerData?: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
 }
 
 const EQ_FREQUENCIES = [32, 64, 125, 250, 500, '1K', '2K', '4K', '8K', '16K'];
@@ -20,7 +21,8 @@ export function Equalizer({
   onVolumeChange,
   currentVolume = 0.7,
   isFullScreen = false,
-  onBack 
+  onBack,
+  getVisualizerData
 }: EqualizerProps) {
   const [gains, setGains] = useState<number[]>(new Array(10).fill(0));
   const [bass, setBass] = useState(0);
@@ -113,6 +115,44 @@ export function Equalizer({
     );
   };
 
+  // 4. Live Peak Indicator Component
+  const PeakIndicator = ({ index }: { index: number }) => {
+    const [peak, setPeak] = useState(0);
+    const frameRef = useRef<number>();
+
+    useEffect(() => {
+      const update = () => {
+        if (getVisualizerData && isEnabled) {
+          const data = getVisualizerData();
+          if (data?.frequencies) {
+            // Map the 10 EQ bands to frequency bins
+            const binSize = Math.floor(data.frequencies.length / 12);
+            const startBin = index * binSize;
+            let sum = 0;
+            for(let i = 0; i < binSize; i++) {
+              sum += data.frequencies[startBin + i] || 0;
+            }
+            const avg = sum / binSize;
+            setPeak(avg / 255);
+          }
+        }
+        frameRef.current = requestAnimationFrame(update);
+      };
+      frameRef.current = requestAnimationFrame(update);
+      return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
+    }, [index]);
+
+    return (
+      <div 
+        className="absolute w-4 h-[2px] bg-white shadow-[0_0_10px_white,0_0_20px_white] transition-transform duration-75 z-20 pointer-events-none"
+        style={{ 
+          bottom: `calc(${peak * 100}% + 8px)`,
+          opacity: peak > 0.1 ? 1 : 0.3
+        }}
+      />
+    );
+  };
+
   return (
     <div className={`flex flex-col h-full bg-[var(--bg-dark)] ${isFullScreen ? 'p-4 sm:p-8 lg:p-10' : 'p-3'} overflow-hidden`}>
       
@@ -184,7 +224,8 @@ export function Equalizer({
 
              {gains.map((gain, index) => (
                <div key={index} className="flex flex-col items-center gap-2 sm:gap-4 h-full z-10 flex-1">
-                 <div className="relative h-full flex items-center justify-center w-full group">
+                 <div className="relative h-[180px] sm:h-[220px] flex items-center justify-center w-full group">
+                   <PeakIndicator index={index} />
                    <input
                      type="range"
                      min="-12"

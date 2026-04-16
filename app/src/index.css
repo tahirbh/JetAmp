@@ -156,67 +156,71 @@
     0 0 50px rgba(0, 255, 136, 0.4);
 }
 
-/* ===== RAINBOW SLIDER ===== */
+/* ===== RAINBOW SLIDER MASTER ===== */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: pointer;
-  height: 24px;
+  height: 32px;
 }
 
-/* Rainbow Track */
+/* Vibrant 7-Stop Rainbow Track */
 input[type="range"]::-webkit-slider-track {
-  height: 10px;
-  border-radius: 5px;
+  height: 12px;
+  border-radius: 6px;
   background: linear-gradient(90deg, 
-    #00ff00 0%,
-    #ffff00 33%,
-    #0000ff 66%,
-    #00ff00 100%
+    #ff0000 0%,
+    #ff8800 16.6%,
+    #ffff00 33.3%,
+    #00ff00 50%,
+    #00ffff 66.6%,
+    #0088ff 83.3%,
+    #8800ff 100%
   );
   box-shadow: 
-    0 0 15px rgba(0, 255, 136, 0.4),
-    inset 0 1px 3px rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,255,255,0.1);
+    0 0 20px rgba(0, 212, 255, 0.3),
+    inset 0 1px 4px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* Glowing Thumb */
+/* Glowing Aura Thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #cccccc 40%, #888888 100%);
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e0e0e0 40%, #a0a0a0 100%);
   border: 2px solid white;
   margin-top: -6px;
   box-shadow: 
-    0 0 10px white,
-    0 0 20px white,
-    0 0 30px rgba(255, 255, 255, 0.5),
-    0 2px 4px rgba(0,0,0,0.5);
-  transition: all 0.15s ease;
+    0 0 15px white,
+    0 0 30px rgba(255, 255, 255, 0.4),
+    0 4px 8px rgba(0,0,0,0.6);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  transform: scale(1.25);
   box-shadow: 
-    0 0 15px white,
-    0 0 30px white,
-    0 0 45px rgba(255, 255, 255, 0.7),
-    0 3px 6px rgba(0,0,0,0.5);
+    0 0 20px white,
+    0 0 40px rgba(255, 255, 255, 0.6),
+    0 6px 12px rgba(0,0,0,0.7);
 }
 
-/* Vertical Rainbow Slider (EQ) */
+/* Vertical Laboratory Sliders */
 input[type="range"][style*="writing-mode: vertical-lr"]::-webkit-slider-track {
-  width: 10px;
+  width: 12px;
   height: 100%;
   background: linear-gradient(180deg, 
-    #00ff00 0%,
-    #ffff00 33%,
-    #0000ff 66%,
-    #00ff00 100%
+    #ff0000 0%,
+    #ff8800 16.6%,
+    #ffff00 33.3%,
+    #00ff00 50%,
+    #00ffff 66.6%,
+    #0088ff 83.3%,
+    #8800ff 100%
   );
 }
 

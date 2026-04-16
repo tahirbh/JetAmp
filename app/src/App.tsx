@@ -522,6 +522,7 @@ function App() {
             currentVolume={volume}
             isFullScreen={true}
             onBack={() => setCurrentView('player')}
+            getVisualizerData={getVisualizerData}
           />
         </div>
       )}
