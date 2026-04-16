@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, RotateCcw, Zap, Shield } from 'lucide-react';
 
 interface EqualizerProps {
@@ -233,7 +233,7 @@ export function Equalizer({
                      step="1"
                      value={gain}
                      onChange={(e) => handleGainChange(index, parseInt(e.target.value))}
-                     className="eq-slider-vertical w-4 sm:w-6 h-full appearance-none bg-transparent cursor-pointer"
+                     className="aura-slider aura-slider-vertical w-4 sm:w-6 h-full"
                      style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
                      disabled={!isEnabled}
                    />

@@ -184,6 +184,65 @@ input[type="range"]::-webkit-slider-track {
   border: 1px solid rgba(255,255,255,0.15);
 }
 
+/* Aura Slider Master Class */
+.aura-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent !important;
+  cursor: pointer;
+}
+
+.aura-slider::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, 
+    #ff0000 0%,
+    #ff8800 16.6%,
+    #ffff00 33.3%,
+    #00ff00 50%,
+    #00ffff 66.6%,
+    #0088ff 83.3%,
+    #8800ff 100%
+  ) !important;
+  box-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.4),
+    inset 0 1px 4px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.aura-slider-vertical::-webkit-slider-runnable-track {
+  width: 12px;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    #ff0000 0%,
+    #ff8800 16.6%,
+    #ffff00 33.3%,
+    #00ff00 50%,
+    #00ffff 66.6%,
+    #0088ff 83.3%,
+    #8800ff 100%
+  ) !important;
+}
+
+.aura-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e0e0e0 40%, #a0a0a0 100%);
+  border: 2px solid white;
+  margin-top: -6px;
+  box-shadow: 0 0 20px white;
+  animation: lightning-flash 1.5s linear infinite !important;
+  z-index: 10;
+}
+
+.aura-slider-vertical::-webkit-slider-thumb {
+  margin-top: 0;
+  margin-left: -6px;
+}
+
 /* Glowing Aura Thumb */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -412,6 +471,30 @@ input[type="range"][style*="writing-mode: vertical-lr"]::-webkit-slider-thumb {
     transparent 100%
   );
   background-size: 100% 20px;
+}
+
+/* ===== LIGHTNING GLOW ===== */
+@keyframes lightning-flash {
+  0%, 100% { 
+    filter: brightness(1) drop-shadow(0 0 5px var(--glow-cyan));
+    box-shadow: 0 0 10px var(--glow-cyan);
+  }
+  5%, 15%, 25% { 
+    filter: brightness(2) drop-shadow(0 0 25px white);
+    box-shadow: 0 0 30px white, 0 0 60px var(--glow-cyan);
+  }
+  10%, 20% { 
+    filter: brightness(1.2) drop-shadow(0 0 10px var(--glow-cyan));
+    box-shadow: 0 0 15px var(--glow-cyan);
+  }
+}
+
+.lightning-glow {
+  animation: lightning-flash 2s linear infinite;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  animation: lightning-flash 2s linear infinite;
 }
 
 

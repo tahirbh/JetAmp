@@ -114,7 +114,7 @@ export function CarPlayer({
             step="1"
             value={currentTime}
             onChange={(e) => onSeek(parseFloat(e.target.value))}
-            className="w-full h-0.5 my-0.5 opacity-60"
+            className="w-full aura-slider h-6 my-1"
           />
         </div>
 
@@ -172,7 +172,7 @@ export function CarPlayer({
               step="0.01"
               value={volume}
               onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-              className="flex-1 h-0.5"
+              className="flex-1 aura-slider h-5"
             />
           </div>
 
