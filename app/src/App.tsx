@@ -5,6 +5,7 @@ import { Speaker } from '@/components/Speaker';
 import { Equalizer } from '@/components/Equalizer';
 import { TopMenu } from '@/components/TopMenu';
 import { URLDialog } from '@/components/URLDialog';
+import { HelpPage } from '@/components/HelpPage';
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
 
@@ -83,7 +84,8 @@ function App() {
   const [playlist, setPlaylist] = useState<Track[]>([]);
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'player' | 'equalizer'>('player');
+  const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
+  const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'oscilloscope'>('sanyo');
 
   // Load from localStorage
   useEffect(() => {
@@ -437,7 +439,10 @@ function App() {
         onStop={() => { pause(); seek(0); }}
         onPrev={playPrev}
         onNext={playNext}
+        onShowHelp={() => setCurrentView('help')}
+        onSetVisualizerStyle={setVisualizerStyle}
         isPlaying={isPlaying}
+        currentStyle={visualizerStyle}
       />
 
       {/* Hi-Fi 4-Column Layout */}
@@ -471,6 +476,7 @@ function App() {
             onToggleShuffle={toggleShuffle}
             onToggleEqualizer={() => setCurrentView('equalizer')}
             getVisualizerData={getVisualizerData}
+            visualizerStyle={visualizerStyle}
           />
         </div>
 
@@ -513,11 +519,17 @@ function App() {
             onBassChange={handleBassChange}
             onTrebleChange={handleTrebleChange}
             onVolumeChange={changeVolume}
-            trackCount={playlist.length}
             currentVolume={volume}
             isFullScreen={true}
             onBack={() => setCurrentView('player')}
           />
+        </div>
+      )}
+
+      {/* Help Center View */}
+      {currentView === 'help' && (
+        <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)] animate-in zoom-in-95 duration-300">
+          <HelpPage onBack={() => setCurrentView('player')} />
         </div>
       )}
     </div>

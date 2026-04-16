@@ -25,7 +25,10 @@ interface TopMenuProps {
   onStop: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onShowHelp: () => void;
+  onSetVisualizerStyle: (style: 'sanyo' | 'oscilloscope') => void;
   isPlaying: boolean;
+  currentStyle: 'sanyo' | 'oscilloscope';
 }
 
 export function TopMenu({
@@ -37,7 +40,10 @@ export function TopMenu({
   onStop,
   onPrev,
   onNext,
+  onShowHelp,
+  onSetVisualizerStyle,
   isPlaying,
+  currentStyle,
 }: TopMenuProps) {
   return (
     <div className="w-full bg-[var(--bg-panel)] border-b border-[var(--metal-dark)] relative z-50">
@@ -91,16 +97,25 @@ export function TopMenu({
           </MenubarTrigger>
           <MenubarContent className="bg-[var(--bg-card)] border-[var(--metal-dark)] text-gray-300 shadow-2xl">
             <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">
-              <Activity size={16} /> Equalizer 
+              <Activity size={16} /> Signal Laboratory 
             </MenubarItem>
             <MenubarSub>
               <MenubarSubTrigger className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">
-                Visualizer
+                Visualizer Styles
               </MenubarSubTrigger>
               <MenubarSubContent className="bg-[var(--bg-card)] border-[var(--metal-dark)]">
-                <MenubarItem className="focus:bg-[var(--glow-cyan)]/10">Sanyo Spectrum</MenubarItem>
-                <MenubarItem className="focus:bg-[var(--glow-cyan)]/10">Oscilloscope</MenubarItem>
-                <MenubarItem className="focus:bg-[var(--glow-cyan)]/10">None</MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('sanyo')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'sanyo' ? 'text-[var(--glow-cyan)] font-bold' : ''}`}
+                >
+                  Sanyo Spectrum {currentStyle === 'sanyo' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('oscilloscope')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'oscilloscope' ? 'text-[var(--glow-cyan)] font-bold' : ''}`}
+                >
+                  Digital Oscilloscope {currentStyle === 'oscilloscope' && '✓'}
+                </MenubarItem>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarContent>
@@ -111,18 +126,19 @@ export function TopMenu({
             Help
           </MenubarTrigger>
           <MenubarContent className="bg-[var(--bg-card)] border-[var(--metal-dark)] text-gray-300 shadow-2xl">
-            <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">
-              <Info size={16} /> About JetAudio Hi-Fi
+            <MenubarItem onClick={onShowHelp} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer font-bold text-white">
+              <Info size={16} /> Disco Aura Wiki & Help
             </MenubarItem>
-            <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">
-              <Settings size={16} /> Settings
+            <MenubarSeparator className="bg-[var(--metal-dark)]" />
+            <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer opacity-50">
+              <Settings size={16} /> System Settings
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
 
         <div className="ml-auto flex items-center pr-4 gap-2">
             <Music className="w-4 h-4 text-[var(--glow-cyan)] animate-pulse" />
-            <span className="text-[10px] font-bold glow-text-cyan tracking-widest uppercase">Hi-Fi System</span>
+            <span className="text-[10px] sm:text-xs font-black rainbow-text tracking-[0.2em] uppercase">Disco Aura Hi-Fi</span>
         </div>
       </Menubar>
     </div>

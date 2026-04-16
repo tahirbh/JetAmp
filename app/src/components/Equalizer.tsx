@@ -6,7 +6,6 @@ interface EqualizerProps {
   onBassChange: (gain: number) => void;
   onTrebleChange: (gain: number) => void;
   onVolumeChange: (volume: number) => void;
-  trackCount?: number;
   currentVolume?: number;
   isFullScreen?: boolean;
   onBack?: () => void;
@@ -19,7 +18,6 @@ export function Equalizer({
   onBassChange,
   onTrebleChange,
   onVolumeChange,
-  trackCount = 0, 
   currentVolume = 0.7,
   isFullScreen = false,
   onBack 
@@ -116,84 +114,76 @@ export function Equalizer({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-[var(--bg-dark)] ${isFullScreen ? 'p-6 sm:p-10' : 'p-3'}`}>
+    <div className={`flex flex-col h-full bg-[var(--bg-dark)] ${isFullScreen ? 'p-4 sm:p-8 lg:p-10' : 'p-3'} overflow-hidden`}>
       
       {/* 1. LAYERED HEADER */}
-      <div className="flex items-center justify-between mb-8 flex-shrink-0">
-        <div className="flex items-center gap-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-8 flex-shrink-0">
+        <div className="flex items-center gap-4 sm:gap-6">
           {onBack && (
             <button 
               onClick={onBack}
-              className="p-3 bg-[var(--metal-dark)] rounded-full hover:bg-[var(--metal-mid)] border border-white/10 active:scale-90 transition-all"
+              className="p-2 sm:p-3 bg-[var(--metal-dark)] rounded-full hover:bg-[var(--metal-mid)] border border-white/10 active:scale-90 transition-all shadow-lg"
             >
-              <ArrowLeft className="w-6 h-6 text-white" />
+              <ArrowLeft className="w-5 h-5 sm:w-6 h-6 text-white" />
             </button>
           )}
           <div className="flex flex-col">
-            <h1 className="text-xl sm:text-3xl font-black rainbow-text uppercase tracking-tighter">Hi-Fi Laboratory</h1>
+            <h1 className="text-lg sm:text-3xl font-black rainbow-text uppercase tracking-tighter">Signal Laboratory</h1>
             <div className="flex items-center gap-2">
-               <Shield className="w-3 h-3 text-[var(--glow-cyan)]" />
-               <span className="text-[10px] text-gray-500 font-mono tracking-widest">ADVANCED SIGNAL PROCESSING ACTIVE</span>
+               <Shield className="w-2.5 h-2.5 text-[var(--glow-cyan)]" />
+               <span className="text-[8px] sm:text-[10px] text-gray-500 font-mono tracking-widest uppercase">Disco Aura Signal Processing</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-           {/* Global Track Counter */}
-           <div className="hidden sm:flex flex-col items-end pr-6 border-r border-white/10">
-              <span className="text-[10px] text-gray-500 font-black uppercase">Source Tracks</span>
-              <span className="text-2xl font-black rainbow-text font-mono leading-none">{trackCount.toString().padStart(2, '0')}</span>
-           </div>
-
+        <div className="flex items-center gap-2 sm:gap-4 scale-90 sm:scale-100 origin-right">
            <button
             onClick={() => setIsEnabled(!isEnabled)}
-            className={`group relative overflow-hidden px-8 py-3 rounded-xl transition-all font-black uppercase tracking-tighter ${
+            className={`group relative overflow-hidden px-4 sm:px-8 py-2 sm:py-3 rounded-xl transition-all font-black uppercase tracking-tighter text-[10px] sm:text-base ${
               isEnabled 
                 ? 'bg-gradient-to-r from-cyan-600 to-blue-800 text-white shadow-[0_0_30px_rgba(6,182,212,0.4)]' 
                 : 'bg-gray-800 text-gray-500'
             }`}
           >
             <div className="relative z-10 flex items-center gap-2">
-              <Zap className={`w-4 h-4 ${isEnabled ? 'text-yellow-400 animate-pulse' : ''}`} />
-              {isEnabled ? 'SYSTEM ACTIVE' : 'SYSTEM BYPASS'}
+              <Zap className={`w-3 h-3 sm:w-4 h-4 ${isEnabled ? 'text-yellow-400 animate-pulse' : ''}`} />
+              {isEnabled ? 'SYSTEM ACTIVE' : 'BYPASS'}
             </div>
           </button>
 
           <button
             onClick={resetEQ}
-            className="p-3 bg-gray-800 text-gray-400 rounded-full hover:text-white border border-white/5 active:rotate-180 transition-all duration-500"
-            title="Reset All Controls"
+            className="p-2 sm:p-3 bg-gray-800 text-gray-400 rounded-full hover:text-white border border-white/5 active:rotate-180 transition-all duration-500"
           >
-            <RotateCcw className="w-6 h-6" />
+            <RotateCcw className="w-5 h-5 sm:w-6 h-6" />
           </button>
         </div>
       </div>
 
-      {/* 2. MAIN CONTROL GRID */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8 min-h-0 overflow-hidden">
+      {/* 2. MAIN CONTROL GRID - OPTIMIZED FOR HORIZONTAL */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_350px] gap-4 sm:gap-8 min-h-0 overflow-hidden">
         
         {/* LEFT PANEL: PRECISION SLIDERS */}
-        <div className="flex flex-col bg-black/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 relative overflow-hidden">
+        <div className="flex flex-col bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 rainbow-line-horizontal !opacity-50" />
           
-          <div className="flex items-center justify-between mb-4 px-2">
-             <span className="text-xs font-black text-gray-500 tracking-[0.4em] uppercase">10-Band Graphic Equalizer</span>
-             <div className="flex gap-2 text-[10px] font-mono text-cyan-500/50">
-                <span>PEAK</span>
-                <span>RMS</span>
+          <div className="flex items-center justify-between mb-4 px-1 sm:px-2">
+             <span className="text-[10px] sm:text-xs font-black text-gray-500 tracking-[0.2em] sm:tracking-[0.4em] uppercase">10-Band Graphic EQ</span>
+             <div className="flex gap-2 text-[8px] sm:text-[10px] font-mono text-cyan-500/50">
+                <span>DIGITAL MASTER</span>
              </div>
           </div>
 
-          <div className="flex-1 flex items-end justify-between gap-2 sm:gap-4 relative px-2">
+          <div className="flex-1 flex items-end justify-between gap-1 sm:gap-4 relative px-1 sm:px-2">
              {/* Dynamic Scale Line */}
-             <div className="absolute inset-0 flex flex-col justify-between py-12 pointer-events-none">
+             <div className="absolute inset-0 flex flex-col justify-between py-10 sm:py-12 pointer-events-none">
                 {[...Array(7)].map((_, i) => (
-                  <div key={i} className="w-full h-[1px] bg-white/5 border-b border-white/[0.02]" />
+                  <div key={i} className="w-full h-[1px] bg-white/5" />
                 ))}
              </div>
 
              {gains.map((gain, index) => (
-               <div key={index} className="flex flex-col items-center gap-4 h-full z-10 flex-1">
+               <div key={index} className="flex flex-col items-center gap-2 sm:gap-4 h-full z-10 flex-1">
                  <div className="relative h-full flex items-center justify-center w-full group">
                    <input
                      type="range"
@@ -202,19 +192,15 @@ export function Equalizer({
                      step="1"
                      value={gain}
                      onChange={(e) => handleGainChange(index, parseInt(e.target.value))}
-                     className="eq-slider-vertical w-6 h-full appearance-none bg-transparent cursor-pointer"
-                     style={{
-                       writingMode: 'vertical-lr',
-                       direction: 'rtl'
-                     }}
+                     className="eq-slider-vertical w-4 sm:w-6 h-full appearance-none bg-transparent cursor-pointer"
+                     style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
                      disabled={!isEnabled}
                    />
-                   {/* Level Readout (Hover) */}
-                   <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-black text-[10px] font-black px-1 rounded-sm">
+                   <div className="absolute -top-6 sm:-top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-black text-[8px] sm:text-[10px] font-black px-1 rounded-sm">
                       {gain > 0 ? `+${gain}` : gain}
                    </div>
                  </div>
-                 <span className="text-[10px] sm:text-xs text-gray-400 font-black font-mono tracking-tighter truncate w-full text-center">
+                 <span className="text-[8px] sm:text-xs text-gray-500 font-mono tracking-tighter truncate w-full text-center">
                    {EQ_FREQUENCIES[index]}
                  </span>
                </div>
@@ -222,28 +208,28 @@ export function Equalizer({
           </div>
         </div>
 
-        {/* RIGHT PANEL: POWER KNOBS */}
-        <div className="flex flex-col gap-6">
+        {/* RIGHT PANEL: POWER KNOBS (SCALED FOR LANDSCAPE) */}
+        <div className="flex flex-col gap-4 sm:gap-6 overflow-y-auto pr-1">
            {/* Knobs Section */}
-           <div className="bg-gradient-to-b from-gray-900 to-black border border-white/5 rounded-3xl p-8 flex flex-col gap-8 shadow-2xl">
-              <div className="flex justify-between items-center px-2">
-                 <Knob label="BASS BOOST" value={bass} min={0} max={15} onChange={handleBassChange} colorClass="from-orange-500 to-red-600" />
+           <div className="bg-gradient-to-b from-gray-900 to-black border border-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-8 flex flex-col gap-6 sm:gap-8 shadow-2xl">
+              <div className="flex justify-between items-center px-1 sm:px-2 gap-2">
+                 <Knob label="BASS" value={bass} min={0} max={15} onChange={handleBassChange} colorClass="from-orange-500 to-red-600" />
                  <Knob label="TREBLE" value={treble} min={0} max={15} onChange={handleTrebleChange} colorClass="from-green-500 to-emerald-600" />
               </div>
-              <div className="flex justify-center border-t border-white/5 pt-8">
-                 <Knob label="MASTER POWER" value={Math.round(currentVolume * 100)} min={0} max={100} onChange={(v: number) => onVolumeChange(v/100)} colorClass="from-cyan-400 to-blue-500" />
+              <div className="flex justify-center border-t border-white/5 pt-6 sm:pt-8">
+                 <Knob label="MASTER" value={Math.round(currentVolume * 100)} min={0} max={100} onChange={(v: number) => onVolumeChange(v/100)} colorClass="from-cyan-400 to-blue-500" />
               </div>
            </div>
 
            {/* Preset Lab */}
-           <div className="flex-1 bg-black/60 rounded-3xl p-6 border border-white/5">
-              <span className="text-xs font-black text-gray-500 tracking-[0.3em] uppercase mb-4 block">Preset Laboratory</span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+           <div className="bg-black/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5">
+              <span className="text-[10px] sm:text-xs font-black text-gray-500 tracking-[0.2em] uppercase mb-3 block">Presets</span>
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                 {presets.map((preset) => (
                   <button
                     key={preset.name}
                     onClick={() => applyPreset(preset.gains)}
-                    className="px-3 py-3 text-[10px] bg-gray-800/50 text-gray-300 rounded-xl hover:bg-[var(--glow-cyan)] hover:text-black font-black uppercase transition-all duration-300 active:scale-95 border border-white/5"
+                    className="px-2 py-2 sm:py-3 text-[9px] sm:text-[10px] bg-gray-800/50 text-gray-300 rounded-lg sm:rounded-xl hover:bg-[var(--glow-cyan)] hover:text-black font-black uppercase transition-all duration-300 active:scale-95 border border-white/5"
                   >
                     {preset.name}
                   </button>

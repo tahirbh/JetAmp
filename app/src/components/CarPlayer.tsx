@@ -3,7 +3,7 @@ import {
   Shuffle, Volume2
 } from 'lucide-react';
 import { RotatingCD } from './RotatingCD';
-import { SanyoSpectrum } from './SanyoSpectrum';
+import { AuraVisualizer } from './AuraVisualizer';
 import type { Track } from '@/types';
 
 interface CarPlayerProps {
@@ -23,6 +23,7 @@ interface CarPlayerProps {
   onToggleShuffle: () => void;
   onToggleEqualizer: () => void;
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
+  visualizerStyle?: 'sanyo' | 'oscilloscope';
 }
 
 export function CarPlayer({
@@ -42,6 +43,7 @@ export function CarPlayer({
   onToggleShuffle,
   onToggleEqualizer,
   getVisualizerData,
+  visualizerStyle = 'sanyo',
 }: CarPlayerProps) {
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -57,10 +59,11 @@ export function CarPlayer({
       <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden">
         <div className="h-16 sm:h-20 lg:h-32 relative">
           <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
-          <SanyoSpectrum
+          <AuraVisualizer
             getVisualizerData={getVisualizerData}
             isPlaying={isPlaying}
-            barCount={20}
+            barCount={24}
+            mode={visualizerStyle}
           />
           <div className="absolute bottom-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
         </div>
