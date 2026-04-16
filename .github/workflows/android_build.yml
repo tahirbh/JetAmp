@@ -8,15 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
 
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-        with:
-          path: '.'
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,20 +24,21 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Environment Check
+      - name: Verify Paths
         run: |
-          node -v
-          npm -v
-          java -version
-          ls -R ..  # List everything to verify structure
+          pwd
+          ls -R
 
       - name: Install Dependencies
-        run: npm install
+        working-directory: app
+        run: npm install --legacy-peer-deps
 
       - name: Build Web App
+        working-directory: app
         run: npm run build
 
       - name: Capacitor Sync
+        working-directory: app
         run: npx cap sync android --verbose
 
       - name: Build APK with Gradle
