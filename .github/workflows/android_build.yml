@@ -41,13 +41,19 @@ jobs:
       - name: Capacitor Sync
         run: |
           cd app
-          npx cap sync android
+          echo "Checking for dist directory..."
+          ls -la dist
+          echo "Running Capacitor Sync..."
+          npx cap sync android --verbose
 
       - name: Build APK with Gradle
         run: |
           cd app/android
+          echo "Cleaning Gradle..."
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew clean
+          echo "Building APK..."
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
