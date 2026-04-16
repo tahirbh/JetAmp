@@ -115,9 +115,10 @@ export function Equalizer({
     );
   };
 
-  // 4. Live Peak Indicator Component
+  // 4. Live Peak Indicator Component (WITH GRAVITY PHYSICS)
   const PeakIndicator = ({ index }: { index: number }) => {
-    const [peak, setPeak] = useState(0);
+    const [displayPeak, setDisplayPeak] = useState(0);
+    const lastSignalRef = useRef(0);
     const frameRef = useRef<number>();
 
     useEffect(() => {
@@ -132,22 +133,32 @@ export function Equalizer({
             for(let i = 0; i < binSize; i++) {
               sum += data.frequencies[startBin + i] || 0;
             }
-            const avg = sum / binSize;
-            setPeak(avg / 255);
+            const targetSignal = sum / (binSize * 255);
+
+            // PHYSICS LOGIC: Fall gracefully
+            if (targetSignal > lastSignalRef.current) {
+               // Jump up instantly
+               lastSignalRef.current = targetSignal;
+            } else {
+               // Fall with decay (0.05 per frame ~ 3 pixels/frame)
+               lastSignalRef.current = Math.max(0, lastSignalRef.current - 0.015);
+            }
+            
+            setDisplayPeak(lastSignalRef.current);
           }
         }
         frameRef.current = requestAnimationFrame(update);
       };
       frameRef.current = requestAnimationFrame(update);
       return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-    }, [index]);
+    }, [index, isEnabled]);
 
     return (
       <div 
-        className="absolute w-4 h-[2px] bg-white shadow-[0_0_10px_white,0_0_20px_white] transition-transform duration-75 z-20 pointer-events-none"
+        className="absolute w-4 h-[2px] bg-white shadow-[0_0_10px_white,0_0_20px_white] z-20 pointer-events-none"
         style={{ 
-          bottom: `calc(${peak * 100}% + 8px)`,
-          opacity: peak > 0.1 ? 1 : 0.3
+          bottom: `calc(${displayPeak * 100}% + 8px)`,
+          opacity: displayPeak > 0.05 ? 1 : 0.3
         }}
       />
     );

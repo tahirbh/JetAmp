@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward,
   Shuffle, Volume2
@@ -45,12 +46,35 @@ export function CarPlayer({
   getVisualizerData,
   visualizerStyle = 'sanyo',
 }: CarPlayerProps) {
+  const [bassLevel, setBassLevel] = useState(0);
+  const frameRef = useRef<number>();
+
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // REACTIVE BASS CALCULATION
+  useEffect(() => {
+    const update = () => {
+      if (getVisualizerData && isPlaying) {
+        const data = getVisualizerData();
+        if (data?.frequencies) {
+          // Average the first 8 bins for bass intensity
+          let sum = 0;
+          for (let i = 0; i < 8; i++) sum += data.frequencies[i] || 0;
+          setBassLevel(sum / (8 * 255));
+        }
+      } else {
+        setBassLevel(0);
+      }
+      frameRef.current = requestAnimationFrame(update);
+    };
+    frameRef.current = requestAnimationFrame(update);
+    return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
+  }, [getVisualizerData, isPlaying]);
 
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden">
@@ -81,6 +105,7 @@ export function CarPlayer({
               coverUrl={currentTrack?.cover}
               isPlaying={isPlaying}
               size={undefined} 
+              bassLevel={bassLevel}
             />
           </div>
 

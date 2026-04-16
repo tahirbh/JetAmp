@@ -22,9 +22,14 @@ export function HelpPage({ onBack }: HelpPageProps) {
       content: 'Switch between the "Sanyo Spectrum" (classic bars) and the "Digital Oscilloscope" (real-time waveform) via the Audio > Visualizer Styles menu.'
     },
     {
+      title: 'Dynamics & Tuning',
+      icon: <Globe className="w-5 h-5 text-orange-400" />,
+      content: 'The system features "Gravity Physics" on EQ peaks and a "Reactive Bass Aura" behind the CD. These elements pulse specifically to low-end frequencies for a breathing visual experience.'
+    },
+    {
       title: 'Navigation Tips',
       icon: <MousePointer2 className="w-5 h-5 text-emerald-400" />,
-      content: 'The system is optimized for horizontal car displays. All controls are touch-friendly and designed for high-contrast visibility in moving vehicles.'
+      content: 'Optimized for 7-inch car displays. All controls are ultra-responsive. Use the Signal Laboratory for precision road-tuning your speaker output.'
     }
   ];
 

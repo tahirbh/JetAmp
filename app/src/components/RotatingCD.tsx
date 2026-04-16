@@ -5,12 +5,18 @@ interface RotatingCDProps {
   coverUrl?: string;
   isPlaying: boolean;
   size?: number;
+  bassLevel?: number; // 0 to 1
 }
 
-export function RotatingCD({ coverUrl, isPlaying, size = 200 }: RotatingCDProps) {
+export function RotatingCD({ coverUrl, isPlaying, size = 200, bassLevel = 0 }: RotatingCDProps) {
   const cdRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const rotationRef = useRef(0);
+
+  // Reactive Aura Scaling
+  const auraScale = isPlaying ? 1 + (bassLevel * 0.4) : 1;
+  const auraOpacity = isPlaying ? 0.3 + (bassLevel * 0.5) : 0.2;
+  const auraBlur = isPlaying ? 20 + (bassLevel * 30) : 15;
 
   useEffect(() => {
     if (!isPlaying) {
@@ -47,14 +53,24 @@ export function RotatingCD({ coverUrl, isPlaying, size = 200 }: RotatingCDProps)
       className="relative flex items-center justify-center transition-all duration-500"
       style={{ width: size, height: size }}
     >
-      {/* Outer glow ring */}
+      {/* Outer reactive aura ring */}
       <div 
-        className={`absolute inset-0 rounded-full transition-opacity duration-500 ${
-          isPlaying ? 'opacity-100' : 'opacity-50'
-        }`}
+        className="absolute inset-0 rounded-full transition-all duration-75"
         style={{
-          background: 'radial-gradient(circle, rgba(0,212,255,0.3) 0%, transparent 70%)',
-          filter: 'blur(20px)',
+          background: 'radial-gradient(circle, rgba(0,212,255,0.4) 0%, transparent 70%)',
+          filter: `blur(${auraBlur}px)`,
+          opacity: auraOpacity,
+          transform: `scale(${auraScale})`,
+        }}
+      />
+      
+      {/* Bass Shockwave (only visible on heavy peaks) */}
+      <div 
+        className="absolute inset-0 rounded-full border-4 border-[var(--glow-cyan)] opacity-0 transition-all duration-75"
+        style={{
+          opacity: bassLevel > 0.8 ? (bassLevel - 0.8) * 2 : 0,
+          transform: `scale(${1 + (bassLevel * 0.8)})`,
+          filter: 'blur(10px)',
         }}
       />
       
