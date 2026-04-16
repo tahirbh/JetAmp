@@ -225,18 +225,20 @@ export function Equalizer({
              </div>
           </div>
 
-          <div className="flex-1 flex items-end justify-between gap-1 sm:gap-4 relative px-1 sm:px-2">
-             {/* Dynamic Scale Line */}
-             <div className="absolute inset-0 flex flex-col justify-between py-10 sm:py-12 pointer-events-none">
+          <div className="flex-1 flex items-stretch justify-between gap-1 sm:gap-3 relative px-1 sm:px-2">
+             {/* Dynamic Scale Lines */}
+             <div className="absolute inset-0 flex flex-col justify-between py-4 pointer-events-none">
                 {[...Array(7)].map((_, i) => (
                   <div key={i} className="w-full h-[1px] bg-white/5" />
                 ))}
              </div>
 
              {gains.map((gain, index) => (
-               <div key={index} className="flex flex-col items-center gap-2 sm:gap-4 h-full z-10 flex-1">
-                 <div className="relative h-[180px] sm:h-[220px] flex items-center justify-center w-full group">
+               <div key={index} className="flex flex-col items-center gap-2 z-10 flex-1 min-w-0">
+                 {/* Slider area — fixed height container, slider is rotated inside */}
+                 <div className="relative flex items-center justify-center w-full" style={{ height: '200px' }}>
                    <PeakIndicator index={index} />
+                   {/* The slider is wider than the container; rotate works because overflow is hidden at parent level */}
                    <input
                      type="range"
                      min="-12"
@@ -244,15 +246,17 @@ export function Equalizer({
                      step="1"
                      value={gain}
                      onChange={(e) => handleGainChange(index, parseInt(e.target.value))}
-                     className="aura-slider aura-slider-vertical w-4 sm:w-6 h-full"
-                     style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
+                     className="eq-vertical-slider"
+                     style={{ width: '180px', height: '22px' }}
                      disabled={!isEnabled}
+                     title={`${EQ_FREQUENCIES[index]}Hz: ${gain > 0 ? `+${gain}` : gain}dB`}
                    />
-                   <div className="absolute -top-6 sm:-top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500 text-black text-[8px] sm:text-[10px] font-black px-1 rounded-sm">
-                      {gain > 0 ? `+${gain}` : gain}
+                   {/* Value tooltip on hover */}
+                   <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-black font-mono text-cyan-400 opacity-60 pointer-events-none">
+                     {gain > 0 ? `+${gain}` : gain}
                    </div>
                  </div>
-                 <span className="text-[8px] sm:text-xs text-gray-500 font-mono tracking-tighter truncate w-full text-center">
+                 <span className="text-[8px] sm:text-[10px] text-gray-500 font-mono tracking-tighter w-full text-center">
                    {EQ_FREQUENCIES[index]}
                  </span>
                </div>

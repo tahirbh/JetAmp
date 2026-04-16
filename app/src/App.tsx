@@ -449,7 +449,7 @@ function App() {
       <div className="flex-1 flex car-layout">
         
         {/* Column 1: Speaker Left - Responsive Width */}
-        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
+        <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
           <Speaker 
             side="left" 
             isPlaying={isPlaying} 
@@ -481,7 +481,7 @@ function App() {
         </div>
 
         {/* Column 3: Playlist - NOW FULL HEIGHT */}
-        <div className="hidden md:flex md:w-[22%] lg:w-[25%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50">
+        <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50">
           <div className="flex-1 overflow-hidden">
             <CarPlaylist
               tracks={playlist}
@@ -496,7 +496,7 @@ function App() {
         </div>
 
         {/* Column 4: Speaker Right - Responsive Width */}
-        <div className="hidden md:block md:w-[18%] lg:w-[20%] xl:w-[22%] h-full overflow-hidden speaker-column">
+        <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden speaker-column">
           <Speaker 
             side="right" 
             isPlaying={isPlaying} 

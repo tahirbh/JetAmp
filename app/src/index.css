@@ -210,10 +210,11 @@ input[type="range"]::-webkit-slider-track {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
+/* Vertical slider track — uses rotate approach, so gradient stays horizontal */
 .aura-slider-vertical::-webkit-slider-runnable-track {
-  width: 12px;
-  height: 100%;
-  background: linear-gradient(180deg, 
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, 
     #ff0000 0%,
     #ff8800 16.6%,
     #ffff00 33.3%,
@@ -222,6 +223,10 @@ input[type="range"]::-webkit-slider-track {
     #0088ff 83.3%,
     #8800ff 100%
   ) !important;
+  box-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.4),
+    inset 0 1px 4px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .aura-slider::-webkit-slider-thumb {
@@ -239,8 +244,7 @@ input[type="range"]::-webkit-slider-track {
 }
 
 .aura-slider-vertical::-webkit-slider-thumb {
-  margin-top: 0;
-  margin-left: -6px;
+  margin-top: -6px;
 }
 
 /* Glowing Aura Thumb */
@@ -268,24 +272,45 @@ input[type="range"]::-webkit-slider-thumb:hover {
     0 6px 12px rgba(0,0,0,0.7);
 }
 
-/* Vertical Laboratory Sliders */
-input[type="range"][style*="writing-mode: vertical-lr"]::-webkit-slider-track {
-  width: 12px;
-  height: 100%;
-  background: linear-gradient(180deg, 
-    #ff0000 0%,
-    #ff8800 16.6%,
-    #ffff00 33.3%,
-    #00ff00 50%,
-    #00ffff 66.6%,
-    #0088ff 83.3%,
-    #8800ff 100%
-  );
+/* Vertical Laboratory Sliders — rotate approach */
+.eq-vertical-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  transform: rotate(-90deg);
+  transform-origin: center center;
+  cursor: pointer;
+  background: transparent !important;
 }
 
-input[type="range"][style*="writing-mode: vertical-lr"]::-webkit-slider-thumb {
-  margin-top: 0;
-  margin-left: -6px;
+.eq-vertical-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg,
+    #8800ff 0%,
+    #0088ff 16.6%,
+    #00ffff 33.3%,
+    #00ff00 50%,
+    #ffff00 66.6%,
+    #ff8800 83.3%,
+    #ff0000 100%
+  ) !important;
+  box-shadow: 0 0 12px rgba(0,212,255,0.4), inset 0 1px 3px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.eq-vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #d0d0d0 50%, #909090 100%);
+  border: 2px solid white;
+  margin-top: -6px;
+  box-shadow: 0 0 18px white, 0 0 35px rgba(255,255,255,0.5);
+  animation: lightning-flash 1.5s linear infinite !important;
+  z-index: 10;
+  cursor: grab;
 }
 
 /* ===== PANEL STYLES ===== */
