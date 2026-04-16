@@ -119,7 +119,7 @@ export function Equalizer({
   const PeakIndicator = ({ index }: { index: number }) => {
     const [displayPeak, setDisplayPeak] = useState(0);
     const lastSignalRef = useRef(0);
-    const frameRef = useRef<number>();
+    const frameRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
       const update = () => {
