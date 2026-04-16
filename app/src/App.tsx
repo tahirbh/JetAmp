@@ -70,6 +70,8 @@ function App() {
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const bassFilterRef = useRef<BiquadFilterNode | null>(null);
+  const trebleFilterRef = useRef<BiquadFilterNode | null>(null);
 
   // State
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -77,11 +79,11 @@ function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
-  const [repeatMode, setRepeatMode] = useState<'none' | 'one' | 'all'>('none');
   const [shuffleMode, setShuffleMode] = useState(false);
   const [playlist, setPlaylist] = useState<Track[]>([]);
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'player' | 'equalizer'>('player');
 
   // Load from localStorage
   useEffect(() => {
@@ -152,6 +154,17 @@ function App() {
         return filter;
       });
       setFilters(currentFilters);
+
+      // Create Bass and Treble Shelf filters
+      const bassFilter = context.createBiquadFilter();
+      bassFilter.type = 'lowshelf';
+      bassFilter.frequency.value = 200;
+      bassFilterRef.current = bassFilter;
+
+      const trebleFilter = context.createBiquadFilter();
+      trebleFilter.type = 'highshelf';
+      trebleFilter.frequency.value = 3000;
+      trebleFilterRef.current = trebleFilter;
     }
 
     sourceNodeRef.current = context.createMediaElementSource(audio);
@@ -163,7 +176,10 @@ function App() {
       lastNode = filter;
     });
 
-    lastNode.connect(gainNodeRef.current);
+    lastNode.connect(bassFilterRef.current!);
+    bassFilterRef.current!.connect(trebleFilterRef.current!);
+    trebleFilterRef.current!.connect(gainNodeRef.current);
+    
     gainNodeRef.current.connect(analyserRef.current);
     analyserRef.current.connect(context.destination);
   }, [filters]);
@@ -205,15 +221,10 @@ function App() {
 
   // Handle track end
   const handleTrackEnd = useCallback(() => {
-    if (repeatMode === 'one' && currentTrack) {
-      if (audioElementRef.current) {
-        audioElementRef.current.currentTime = 0;
-        audioElementRef.current.play();
-      }
-    } else if (playlist.length > 0) {
+    if (playlist.length > 0) {
       playNext();
     }
-  }, [repeatMode, currentTrack, playlist.length]);
+  }, [playlist.length]);
 
   // Play
   const play = useCallback(async () => {
@@ -254,12 +265,19 @@ function App() {
     }
   }, []);
 
-  // EQ change
   const handleGainChange = useCallback((index: number, gain: number) => {
     if (filters[index]) {
       filters[index].gain.value = gain;
     }
   }, [filters]);
+
+  const handleBassChange = useCallback((gain: number) => {
+    if (bassFilterRef.current) bassFilterRef.current.gain.value = gain;
+  }, []);
+
+  const handleTrebleChange = useCallback((gain: number) => {
+    if (trebleFilterRef.current) trebleFilterRef.current.gain.value = gain;
+  }, []);
 
   // Play next
   const playNext = useCallback(async () => {
@@ -287,11 +305,6 @@ function App() {
     await loadTrack(playlist[prevIndex]);
     play();
   }, [currentTrack, playlist, loadTrack, play]);
-
-  // Toggle repeat
-  const toggleRepeat = useCallback(() => {
-    setRepeatMode(prev => prev === 'none' ? 'all' : prev === 'all' ? 'one' : 'none');
-  }, []);
 
   // Toggle shuffle
   const toggleShuffle = useCallback(() => {
@@ -447,7 +460,6 @@ function App() {
             currentTime={currentTime}
             duration={duration}
             volume={volume}
-            repeatMode={repeatMode}
             shuffleMode={shuffleMode}
             playlist={playlist}
             onPlay={play}
@@ -456,16 +468,15 @@ function App() {
             onNext={playNext}
             onSeek={seek}
             onVolumeChange={changeVolume}
-            onToggleRepeat={toggleRepeat}
             onToggleShuffle={toggleShuffle}
+            onToggleEqualizer={() => setCurrentView('equalizer')}
             getVisualizerData={getVisualizerData}
           />
         </div>
 
-        {/* Column 3: Playlist & Equalizer - Responsive Width */}
+        {/* Column 3: Playlist - NOW FULL HEIGHT */}
         <div className="hidden md:flex md:w-[22%] lg:w-[25%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50">
-          {/* Playlist - Top 50% */}
-          <div className="h-1/2 overflow-hidden border-b border-[var(--metal-dark)]/50">
+          <div className="flex-1 overflow-hidden">
             <CarPlaylist
               tracks={playlist}
               currentTrack={currentTrack}
@@ -475,10 +486,6 @@ function App() {
               }}
               onRemoveTrack={removeTrack}
             />
-          </div>
-          {/* Equalizer - Bottom 50% */}
-          <div className="h-1/2 overflow-hidden bg-[var(--bg-card)]/50 p-4">
-            <Equalizer onGainChange={handleGainChange} trackCount={playlist.length} />
           </div>
         </div>
 
@@ -497,6 +504,22 @@ function App() {
         onClose={() => setIsURLDialogOpen(false)}
         onSubmit={handleURLSubmit}
       />
+
+      {/* Full-Screen Equalizer View */}
+      {currentView === 'equalizer' && (
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-dark)] animate-in slide-in-from-bottom duration-500">
+          <Equalizer 
+            onGainChange={handleGainChange} 
+            onBassChange={handleBassChange}
+            onTrebleChange={handleTrebleChange}
+            onVolumeChange={changeVolume}
+            trackCount={playlist.length}
+            currentVolume={volume}
+            isFullScreen={true}
+            onBack={() => setCurrentView('player')}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import {
   Play, Pause, SkipBack, SkipForward,
-  Repeat, Shuffle, Volume2
+  Shuffle, Volume2
 } from 'lucide-react';
 import { RotatingCD } from './RotatingCD';
 import { SanyoSpectrum } from './SanyoSpectrum';
@@ -12,7 +12,6 @@ interface CarPlayerProps {
   currentTime: number;
   duration: number;
   volume: number;
-  repeatMode: 'none' | 'one' | 'all';
   shuffleMode: boolean;
   playlist: Track[];
   onPlay: () => void;
@@ -21,8 +20,8 @@ interface CarPlayerProps {
   onNext: () => void;
   onSeek: (time: number) => void;
   onVolumeChange: (volume: number) => void;
-  onToggleRepeat: () => void;
   onToggleShuffle: () => void;
+  onToggleEqualizer: () => void;
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
 }
 
@@ -32,7 +31,6 @@ export function CarPlayer({
   currentTime,
   duration,
   volume,
-  repeatMode,
   shuffleMode,
   playlist,
   onPlay,
@@ -41,8 +39,8 @@ export function CarPlayer({
   onNext,
   onSeek,
   onVolumeChange,
-  onToggleRepeat,
   onToggleShuffle,
+  onToggleEqualizer,
   getVisualizerData,
 }: CarPlayerProps) {
   const formatTime = (seconds: number) => {
@@ -55,9 +53,9 @@ export function CarPlayer({
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden">
       
-      {/* 1. TOP ROW: Fixed Spectrum Analyzer (Strict Height) */}
+      {/* 1. TOP ROW: Fixed Spectrum Analyzer (INCREASED HEIGHT) */}
       <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden">
-        <div className="h-10 sm:h-12 lg:h-20 relative">
+        <div className="h-16 sm:h-20 lg:h-32 relative">
           <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
           <SanyoSpectrum
             getVisualizerData={getVisualizerData}
@@ -68,11 +66,11 @@ export function CarPlayer({
         </div>
       </div>
 
-      {/* 2. MIDDLE ROW: Content Area (Text-Over-CD Overlay) */}
-      <div className="w-full flex items-center justify-center px-4 -mt-4 mb-2 min-h-0 relative">
+      {/* 2. MIDDLE ROW: Content Area (CD SHIFTED DOWN) */}
+      <div className="w-full flex items-center justify-center px-4 -mt-2 mb-2 min-h-0 relative">
         
-        {/* Layered Content Container */}
-        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[300px] aspect-square">
+        {/* Layered Content Container - Shifted down with mt-6 */}
+        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[340px] aspect-square mt-6">
           
           {/* Layer 1: Rotating CD (Behind) */}
           <div className="z-10 w-full h-full flex items-center justify-center">
@@ -152,15 +150,11 @@ export function CarPlayer({
           </button>
 
           <button
-            onClick={onToggleRepeat}
-            className={`glow-btn p-3 rounded-full relative transition-all duration-300 ${repeatMode !== 'none' ? 'bg-[var(--glow-cyan)]/20 text-[var(--glow-cyan)]' : 'text-gray-400'}`}
+            onClick={onToggleEqualizer}
+            className="glow-btn p-3 rounded-full text-[var(--glow-cyan)] relative group overflow-hidden"
           >
-            <Repeat className="w-5 h-5" />
-            {repeatMode === 'one' && (
-              <span className="absolute -top-1 -right-1 text-[8px] bg-[var(--glow-cyan)] text-black rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                1
-              </span>
-            )}
+             <div className="text-[10px] font-black group-hover:scale-110 transition-transform">EQ</div>
+             <div className="absolute inset-0 bg-[var(--glow-cyan)]/10 animate-pulse" />
           </button>
         </div>
 

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Music, Trash2, Search, Disc } from 'lucide-react';
+import { Music, Trash2 } from 'lucide-react';
 import type { Track } from '@/types';
 
 interface CarPlaylistProps {
@@ -15,22 +14,8 @@ export function CarPlaylist({
   onSelectTrack, 
   onRemoveTrack 
 }: CarPlaylistProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'artist' | 'album'>('all');
-
-  const filteredTracks = tracks.filter(track => {
-    const query = searchQuery.toLowerCase();
-    if (filter === 'artist') {
-      return track.artist?.toLowerCase().includes(query);
-    } else if (filter === 'album') {
-      return track.album?.toLowerCase().includes(query);
-    }
-    return (
-      track.title?.toLowerCase().includes(query) ||
-      track.artist?.toLowerCase().includes(query) ||
-      track.album?.toLowerCase().includes(query)
-    );
-  });
+  // Clean list mode - Search and Filter logic removed for minimalist UI
+  const filteredTracks = tracks;
 
   const formatDuration = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '--:--';
