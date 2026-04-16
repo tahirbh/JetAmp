@@ -24,29 +24,19 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Verify Environment
-        run: |
-          pwd
-          ls -F
-          node -v
-          npm -v
-
       - name: Install Dependencies
         working-directory: app
         run: npm install --legacy-peer-deps
 
       - name: Build Web App
         working-directory: app
-        run: |
-          npm run build
-          echo "Verified dist contents:"
-          ls -R dist
+        run: npm run build
 
       - name: Capacitor Sync
         working-directory: app
-        env:
-          DEBUG: 'capacitor:*'
-        run: npx cap sync android --verbose
+        run: |
+          echo "Syncing..."
+          npx cap sync android --verbose > sync_log.txt 2>&1 || (cat sync_log.txt && exit 1)
 
       - name: Build APK with Gradle
         working-directory: app/android
@@ -59,3 +49,12 @@ jobs:
         with:
           name: jetamp-debug-apk
           path: app/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-error-logs
+          path: |
+            app/sync_log.txt
+            app/android/app/build/reports/
