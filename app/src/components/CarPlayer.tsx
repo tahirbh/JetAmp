@@ -47,7 +47,7 @@ export function CarPlayer({
   visualizerStyle = 'sanyo',
 }: CarPlayerProps) {
   const [bassLevel, setBassLevel] = useState(0);
-  const frameRef = useRef<number>();
+  const frameRef = useRef<number | undefined>(undefined);
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
