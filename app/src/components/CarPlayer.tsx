@@ -24,7 +24,7 @@ interface CarPlayerProps {
   onToggleShuffle: () => void;
   onToggleEqualizer: () => void;
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
-  visualizerStyle?: 'sanyo' | 'oscilloscope';
+  visualizerStyle?: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow';
 }
 
 export function CarPlayer({
