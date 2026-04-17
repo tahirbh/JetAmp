@@ -1,5 +1,5 @@
 
-const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // Placeholder
+const CLIENT_ID = '775863607279-n39qdr1t0tcjvhortd7ke36oj5v04r9h.apps.googleusercontent.com'; // Production ID
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.readonly',
   'https://www.googleapis.com/auth/userinfo.profile'
