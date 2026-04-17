@@ -20,7 +20,7 @@ export const MusicService = {
       const term = encodeURIComponent(query);
       
       // iTunes Search API (Albums)
-      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=10`);
+      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=50`);
       const itunesData = await itunesResponse.json();
       
       const itunesAlbums: Album[] = (itunesData.results || []).map((album: any) => ({

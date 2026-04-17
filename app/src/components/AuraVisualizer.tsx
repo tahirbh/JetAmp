@@ -22,9 +22,18 @@ export function AuraVisualizer({
 
   const getSegmentColor = (segmentIndex: number, totalSegments: number): { color: string; glow: string } => {
     const ratio = segmentIndex / totalSegments;
-    if (ratio < 0.4) return { color: `hsl(${120 + ratio * 50}, 100%, 50%)`, glow: '#00ff88' };
-    if (ratio < 0.75) return { color: `hsl(${180 - ((ratio - 0.4) / 0.35) * 40}, 100%, 50%)`, glow: '#00d4ff' };
-    return { color: `hsl(0, 100%, 50%)`, glow: '#ff4444' };
+    // Dark Grey / Gunmetal range
+    if (ratio < 0.6) {
+      const lightness = 20 + ratio * 20; // 20% to 32%
+      return { color: `hsl(230, 10%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.1)' };
+    }
+    // Mid Grey
+    if (ratio < 0.85) {
+      const lightness = 40 + (ratio - 0.6) * 40; // 40% to 50%
+      return { color: `hsl(230, 5%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.2)' };
+    }
+    // Deep Red Peak (keep for realism but darker)
+    return { color: '#991111', glow: '#660000' };
   };
 
   const draw = useCallback(() => {

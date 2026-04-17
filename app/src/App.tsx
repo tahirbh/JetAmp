@@ -34,10 +34,7 @@ const parseAudioMetadata = async (file: File): Promise<Partial<Track>> => {
 
 // Extract basic info from filename
 const parseFilename = (filename: string): { title: string; artist: string } => {
-  // Remove extension
   const name = filename.replace(/\.[^/.]+$/, '');
-  
-  // Try to split by common separators
   const separators = [' - ', ' – ', '-', '_'];
   for (const sep of separators) {
     const parts = name.split(sep);
@@ -48,7 +45,6 @@ const parseFilename = (filename: string): { title: string; artist: string } => {
       };
     }
   }
-  
   return { title: name, artist: 'Unknown Artist' };
 };
 
@@ -76,6 +72,10 @@ function App() {
   const gainNodeRef = useRef<GainNode | null>(null);
   const bassFilterRef = useRef<BiquadFilterNode | null>(null);
   const trebleFilterRef = useRef<BiquadFilterNode | null>(null);
+  
+  // Callback Refs to break circular dependencies
+  const loadTrackRef = useRef<((track: Track) => Promise<void>) | null>(null);
+  const playRef = useRef<(() => Promise<void>) | null>(null);
 
   // State
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -97,8 +97,6 @@ function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Note: URL.createObjectURL for local files won't work across reloads 
-        // unless they are re-scanned, so we clear the URLs or handle them.
         setPlaylist(parsed.map((t: Track) => ({ ...t, url: '' })));
       } catch (e) {}
     }
@@ -108,60 +106,37 @@ function App() {
   useEffect(() => {
     if (playlist.length > 0) {
       localStorage.setItem('car-audio-library', JSON.stringify(playlist.map(t => ({
-        ...t, url: '' // Don't save transient URLs
+        ...t, url: '' 
       }))));
     }
   }, [playlist]);
 
-  // Initialize audio context
+  // Audio Engine Core
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
+      const context = new AudioContext();
+      audioContextRef.current = context;
 
-      // Create analyzer
-      const analyser = audioContextRef.current.createAnalyser();
+      const analyser = context.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
       analyserRef.current = analyser;
 
-      // Create gain node
-      const gainNode = audioContextRef.current.createGain();
+      const gainNode = context.createGain();
       gainNode.gain.value = volume;
       gainNodeRef.current = gainNode;
-    }
-  }, [volume]);
 
-  // Setup audio graph
-  const setupAudioGraph = useCallback((audio: HTMLAudioElement) => {
-    if (!audioContextRef.current || !analyserRef.current || !gainNodeRef.current) return;
-
-    if (sourceNodeRef.current) {
-      try {
-        sourceNodeRef.current.disconnect();
-        filters.forEach(f => f.disconnect());
-      } catch (e) {}
-    }
-
-    const context = audioContextRef.current;
-    
-    // Create EQ filters if they don't exist
-    let currentFilters = filters;
-    if (filters.length === 0) {
       const freqs = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-      currentFilters = freqs.map(freq => {
-        const filter = context.createBiquadFilter();
-        filter.type = 'peaking';
-        filter.frequency.value = freq;
-        filter.Q.value = 1;
-        filter.gain.value = 0;
-        return filter;
+      const eqFilters = freqs.map(freq => {
+        const f = context.createBiquadFilter();
+        f.type = 'peaking';
+        f.frequency.value = freq;
+        f.Q.value = 1;
+        f.gain.value = 0;
+        return f;
       });
-      setFilters(currentFilters);
+      setFilters(eqFilters);
 
-      // Create Bass and Treble Shelf filters
       const bassFilter = context.createBiquadFilter();
       bassFilter.type = 'lowshelf';
       bassFilter.frequency.value = 200;
@@ -171,75 +146,71 @@ function App() {
       trebleFilter.type = 'highshelf';
       trebleFilter.frequency.value = 3000;
       trebleFilterRef.current = trebleFilter;
+
+      // Internal Chain
+      let lastNode: AudioNode = eqFilters[0];
+      for (let i = 1; i < eqFilters.length; i++) {
+        lastNode.connect(eqFilters[i]);
+        lastNode = eqFilters[i];
+      }
+      lastNode.connect(bassFilter);
+      bassFilter.connect(trebleFilter);
+      trebleFilter.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(context.destination);
     }
+  }, [volume]);
 
-    sourceNodeRef.current = context.createMediaElementSource(audio);
+  const setupAudioGraph = useCallback((audio: HTMLAudioElement) => {
+    if (!audioContextRef.current || !analyserRef.current || filters.length === 0) return;
     
-    // Connect chain: Source -> Filters[0...N] -> Gain -> Analyser -> Destination
-    let lastNode: AudioNode = sourceNodeRef.current;
-    currentFilters.forEach(filter => {
-      lastNode.connect(filter);
-      lastNode = filter;
-    });
-
-    lastNode.connect(bassFilterRef.current!);
-    bassFilterRef.current!.connect(trebleFilterRef.current!);
-    trebleFilterRef.current!.connect(gainNodeRef.current);
+    if (sourceNodeRef.current) {
+      try { sourceNodeRef.current.disconnect(); } catch (e) {}
+    }
     
-    gainNodeRef.current.connect(analyserRef.current);
-    analyserRef.current.connect(context.destination);
+    sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audio);
+    sourceNodeRef.current.connect(filters[0]);
   }, [filters]);
 
-  // Load track
+  // Stable Playback Callbacks
   const loadTrack = useCallback(async (track: Track) => {
     initAudio();
 
-    if (audioElementRef.current) {
-      audioElementRef.current.pause();
+    if (!audioElementRef.current) {
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audioElementRef.current = audio;
+      setupAudioGraph(audio);
     }
 
-    if (!track.url) {
-      console.warn('Track URL is missing. This usually happens after a refresh. Please re-load your folder.');
-      return;
-    }
+    const audio = audioElementRef.current;
+    audio.pause();
+    
+    if (!track.url) return;
 
-    const audio = new Audio(track.url);
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'auto';
-    audioElementRef.current = audio;
+    setCurrentTime(0);
+    setDuration(0);
+    audio.src = track.url;
+    audio.load();
 
-    setupAudioGraph(audio);
-
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
-    audio.addEventListener('timeupdate', () => setCurrentTime(audio.currentTime));
-    audio.addEventListener('loadedmetadata', () => {
-      setDuration(audio.duration);
-    });
-    audio.addEventListener('ended', () => {
+    audio.onplay = () => setIsPlaying(true);
+    audio.onpause = () => setIsPlaying(false);
+    audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
+    audio.onloadedmetadata = () => setDuration(audio.duration);
+    audio.onended = () => {
       setIsPlaying(false);
-      handleTrackEnd();
-    });
+      playNext();
+    };
 
     setCurrentTrack(track);
-    setCurrentTime(0);
   }, [initAudio, setupAudioGraph]);
 
-  // Handle track end
-  const handleTrackEnd = useCallback(() => {
-    if (playlist.length > 0) {
-      playNext();
-    }
-  }, [playlist.length]);
-
-  // Play
   const play = useCallback(async () => {
     if (audioContextRef.current?.state === 'suspended') {
       await audioContextRef.current.resume();
     }
     
     if (audioElementRef.current && !audioElementRef.current.src) {
-       console.warn('No audio source loaded. Attempting to reload first track.');
        if (playlist.length > 0) await loadTrack(playlist[0]);
     }
     
@@ -248,14 +219,18 @@ function App() {
     } catch (e) {
       console.error('Playback failed:', e);
     }
-  }, [currentTrack, playlist, loadTrack]);
+  }, [playlist, loadTrack]);
 
-  // Pause
+  // Sync refs
+  useEffect(() => {
+    loadTrackRef.current = loadTrack;
+    playRef.current = play;
+  }, [loadTrack, play]);
+
   const pause = useCallback(() => {
     audioElementRef.current?.pause();
   }, []);
 
-  // Seek
   const seek = useCallback((time: number) => {
     if (audioElementRef.current) {
       audioElementRef.current.currentTime = time;
@@ -263,18 +238,13 @@ function App() {
     }
   }, []);
 
-  // Volume change
   const changeVolume = useCallback((vol: number) => {
     setVolume(vol);
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = vol;
-    }
+    if (gainNodeRef.current) gainNodeRef.current.gain.value = vol;
   }, []);
 
   const handleGainChange = useCallback((index: number, gain: number) => {
-    if (filters[index]) {
-      filters[index].gain.value = gain;
-    }
+    if (filters[index]) filters[index].gain.value = gain;
   }, [filters]);
 
   const handleBassChange = useCallback((gain: number) => {
@@ -285,100 +255,64 @@ function App() {
     if (trebleFilterRef.current) trebleFilterRef.current.gain.value = gain;
   }, []);
 
-  // Play next
   const playNext = useCallback(async () => {
-    if (!currentTrack || playlist.length === 0) return;
+    if (playlist.length === 0) return;
+    const currentIdx = currentTrack ? playlist.findIndex(t => t.id === currentTrack.id) : -1;
+    let nextIdx = (currentIdx + 1) % playlist.length;
+    if (shuffleMode) nextIdx = Math.floor(Math.random() * playlist.length);
+    
+    if (loadTrackRef.current) await loadTrackRef.current(playlist[nextIdx]);
+    if (playRef.current) await playRef.current();
+  }, [currentTrack, playlist, shuffleMode]);
 
-    let nextIndex: number;
-    if (shuffleMode) {
-      nextIndex = Math.floor(Math.random() * playlist.length);
-    } else {
-      const currentIndex = playlist.findIndex(t => t.id === currentTrack.id);
-      nextIndex = (currentIndex + 1) % playlist.length;
-    }
-
-    await loadTrack(playlist[nextIndex]);
-    play();
-  }, [currentTrack, playlist, shuffleMode, loadTrack, play]);
-
-  // Play previous
   const playPrev = useCallback(async () => {
-    if (!currentTrack || playlist.length === 0) return;
+    if (playlist.length === 0) return;
+    const currentIdx = currentTrack ? playlist.findIndex(t => t.id === currentTrack.id) : 0;
+    const prevIdx = currentIdx <= 0 ? playlist.length - 1 : currentIdx - 1;
+    
+    if (loadTrackRef.current) await loadTrackRef.current(playlist[prevIdx]);
+    if (playRef.current) await playRef.current();
+  }, [currentTrack, playlist]);
 
-    const currentIndex = playlist.findIndex(t => t.id === currentTrack.id);
-    const prevIndex = currentIndex <= 0 ? playlist.length - 1 : currentIndex - 1;
+  const toggleShuffle = useCallback(() => setShuffleMode(prev => !prev), []);
 
-    await loadTrack(playlist[prevIndex]);
-    play();
-  }, [currentTrack, playlist, loadTrack, play]);
-
-  // Toggle shuffle
-  const toggleShuffle = useCallback(() => {
-    setShuffleMode(prev => !prev);
-  }, []);
-
-  // Handle folder files selected
   const handleFilesSelected = useCallback(async (files: File[]) => {
-    // Clear previous playlist for a fresh load
-    setPlaylist([]);
-    setCurrentTrack(null);
     pause();
-
     const newTracks: Track[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      // Scanning removed from UI
-
+    for (const file of files) {
       const { title, artist } = parseFilename(file.name);
       const metadata = await parseAudioMetadata(file);
       const cover = await fetchAlbumArt(artist, title);
-
-      const track: Track = {
+      newTracks.push({
         id: generateId(),
-        title,
-        artist,
-        album: 'Unknown Album',
+        title, artist, album: 'Unknown Album',
         duration: metadata.duration || 0,
         url: URL.createObjectURL(file),
-        path: file.webkitRelativePath || file.name,
+        path: file.name,
         cover: cover || undefined
-      };
-
-      newTracks.push(track);
+      });
     }
-
-    setPlaylist(prev => [...prev, ...newTracks]);
-
-    // Auto-play first track if none playing
-    if (!isPlaying && newTracks.length > 0) {
-      if (!currentTrack) {
-        await loadTrack(newTracks[0]);
-      }
+    setPlaylist(newTracks);
+    if (newTracks.length > 0) {
+      await loadTrack(newTracks[0]);
       play();
     }
-  }, [currentTrack, isPlaying, loadTrack, play]);
+  }, [loadTrack, play, pause]);
 
-  // Handle URL submitted
   const handleURLSubmit = useCallback(async (url: string) => {
-    // Basic title from URL
-    const title = url.split('/').pop() || 'Network Stream';
-    
     const track: Track = {
       id: generateId(),
-      title,
-      artist: 'Network Stream',
+      title: url.split('/').pop() || 'Stream',
+      artist: 'Network',
       album: 'Online',
       duration: 0,
       url: url,
       path: url,
     };
-
     setPlaylist(prev => [track, ...prev]);
     loadTrack(track);
   }, [loadTrack]);
 
-  // New Menu Handlers
   const handleOpenFile = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -401,7 +335,6 @@ function App() {
     input.click();
   }, [handleFilesSelected]);
 
-  // Remove track from playlist
   const removeTrack = useCallback((trackId: string) => {
     setPlaylist(prev => prev.filter(t => t.id !== trackId));
     if (currentTrack?.id === trackId) {
@@ -410,21 +343,15 @@ function App() {
     }
   }, [currentTrack, pause]);
 
-  // Get visualizer data
   const getVisualizerData = useCallback(() => {
     if (!analyserRef.current) return null;
-
-    const frequencyBinCount = analyserRef.current.frequencyBinCount;
-    const frequencies = new Uint8Array(frequencyBinCount);
-    const waveform = new Uint8Array(frequencyBinCount);
-
+    const frequencies = new Uint8Array(analyserRef.current.frequencyBinCount);
+    const waveform = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(frequencies);
     analyserRef.current.getByteTimeDomainData(waveform);
-
     return { frequencies, waveform };
   }, []);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       audioElementRef.current?.pause();
@@ -435,68 +362,36 @@ function App() {
   return (
     <div className="h-screen w-screen bg-[var(--bg-dark)] flex flex-col overflow-hidden">
       <TopMenu 
-        onOpenFile={handleOpenFile}
-        onOpenFolder={handleOpenFolder}
-        onOpenURL={() => setIsURLDialogOpen(true)}
-        onPlay={play}
-        onPause={pause}
-        onStop={() => { pause(); seek(0); }}
-        onPrev={playPrev}
-        onNext={playNext}
-        onShowHelp={() => setCurrentView('help')}
-        onSetVisualizerStyle={setVisualizerStyle}
-        isPlaying={isPlaying}
-        currentStyle={visualizerStyle}
+        onOpenFile={handleOpenFile} onOpenFolder={handleOpenFolder} onOpenURL={() => setIsURLDialogOpen(true)}
+        onPlay={play} onPause={pause} onStop={() => { pause(); seek(0); }}
+        onPrev={playPrev} onNext={playNext} onShowHelp={() => setCurrentView('help')}
+        onSetVisualizerStyle={setVisualizerStyle} isPlaying={isPlaying} currentStyle={visualizerStyle}
       />
 
-      {/* Hi-Fi 4-Column Layout */}
       <div className="flex-1 flex car-layout">
-        
-        {/* Column 1: Speaker Left - Responsive Width */}
         <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
-          <Speaker 
-            side="left" 
-            isPlaying={isPlaying} 
-            getVisualizerData={getVisualizerData} 
-          />
+          <Speaker side="left" isPlaying={isPlaying} getVisualizerData={getVisualizerData} />
         </div>
 
-        {/* Column 2: Player Core - 100% Mobile, Fluid Desktop */}
         <div className="w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm">
           <CarPlayer
-            currentTrack={currentTrack}
-            isPlaying={isPlaying}
-            currentTime={currentTime}
-            duration={duration}
-            volume={volume}
-            shuffleMode={shuffleMode}
-            playlist={playlist}
-            onPlay={play}
-            onPause={pause}
-            onPrev={playPrev}
-            onNext={playNext}
-            onSeek={seek}
-            onVolumeChange={changeVolume}
-            onToggleShuffle={toggleShuffle}
+            currentTrack={currentTrack} isPlaying={isPlaying} currentTime={currentTime} duration={duration}
+            volume={volume} shuffleMode={shuffleMode} playlist={playlist}
+            onPlay={play} onPause={pause} onPrev={playPrev} onNext={playNext}
+            onSeek={seek} onVolumeChange={changeVolume} onToggleShuffle={toggleShuffle}
             onToggleEqualizer={() => setCurrentView('equalizer')}
-            getVisualizerData={getVisualizerData}
-            visualizerStyle={visualizerStyle}
+            getVisualizerData={getVisualizerData} visualizerStyle={visualizerStyle}
           />
         </div>
 
-        {/* Column 3: Multi-functional Content Hub */}
         <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10">
-          <Tabs 
-            value={rightPanelTab} 
-            onValueChange={(val) => setRightPanelTab(val as any)}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
+          <Tabs value={rightPanelTab} onValueChange={(val) => setRightPanelTab(val as any)} className="flex-1 flex flex-col overflow-hidden">
             <div className="p-2 border-b border-white/5 bg-black/20">
               <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">
-                <TabsTrigger value="playlist" className="flex-1 gap-2 text-xs data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                <TabsTrigger value="playlist" className="flex-1 gap-2 text-xs data-[state=active]:bg-blue-600 transition-all font-bold">
                   <ListMusic className="w-3 h-3" /> Playlist
                 </TabsTrigger>
-                <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all">
+                <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 transition-all font-bold">
                   <Globe className="w-3 h-3" /> Discovery
                 </TabsTrigger>
               </TabsList>
@@ -504,72 +399,36 @@ function App() {
 
             <div className="flex-1 overflow-hidden relative">
               {rightPanelTab === 'playlist' ? (
-                 <div className="h-full animate-in fade-in duration-300">
-                    <CarPlaylist
-                      tracks={playlist}
-                      currentTrack={currentTrack}
-                      onSelectTrack={(track) => {
-                        loadTrack(track);
-                        play();
-                      }}
-                      onRemoveTrack={removeTrack}
-                    />
-                 </div>
+                 <CarPlaylist tracks={playlist} currentTrack={currentTrack} onSelectTrack={(t) => { loadTrack(t); play(); }} onRemoveTrack={removeTrack} />
               ) : (
-                <div className="h-full animate-in slide-in-from-right duration-300">
-                  <DiscoveryHub 
-                    onLoadAlbum={(tracks) => {
-                      setPlaylist(tracks); // Clear previous and set new
-                      setRightPanelTab('playlist');
-                    }}
-                    onPlayTrack={(track) => {
-                      // Add to playlist and play
-                      setPlaylist(prev => [track, ...prev]);
-                      loadTrack(track);
-                      play();
-                    }}
-                  />
-                </div>
+                 <DiscoveryHub 
+                   onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
+                   onPlayTrack={(t) => { setPlaylist(prev => [t, ...prev]); loadTrack(t); play(); }} 
+                 />
               )}
             </div>
           </Tabs>
         </div>
 
-        {/* Column 4: Speaker Right - Responsive Width */}
         <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden speaker-column">
-          <Speaker 
-            side="right" 
-            isPlaying={isPlaying} 
-            getVisualizerData={getVisualizerData} 
-          />
+          <Speaker side="right" isPlaying={isPlaying} getVisualizerData={getVisualizerData} />
         </div>
       </div>
 
-      <URLDialog 
-        isOpen={isURLDialogOpen}
-        onClose={() => setIsURLDialogOpen(false)}
-        onSubmit={handleURLSubmit}
-      />
-
-      {/* Full-Screen Equalizer View */}
+      <URLDialog isOpen={isURLDialogOpen} onClose={() => setIsURLDialogOpen(false)} onSubmit={handleURLSubmit} />
+      
       {currentView === 'equalizer' && (
-        <div className="fixed inset-0 z-[100] bg-[var(--bg-dark)] animate-in slide-in-from-bottom duration-500">
+        <div className="fixed inset-0 z-[100] bg-[var(--bg-dark)]">
           <Equalizer 
-            onGainChange={handleGainChange} 
-            onBassChange={handleBassChange}
-            onTrebleChange={handleTrebleChange}
-            onVolumeChange={changeVolume}
-            currentVolume={volume}
-            isFullScreen={true}
-            onBack={() => setCurrentView('player')}
-            getVisualizerData={getVisualizerData}
+            onGainChange={handleGainChange} onBassChange={handleBassChange} onTrebleChange={handleTrebleChange}
+            onVolumeChange={changeVolume} currentVolume={volume} isFullScreen={true}
+            onBack={() => setCurrentView('player')} getVisualizerData={getVisualizerData}
           />
         </div>
       )}
 
-      {/* Help Center View */}
       {currentView === 'help' && (
-        <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)] animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
           <HelpPage onBack={() => setCurrentView('player')} />
         </div>
       )}

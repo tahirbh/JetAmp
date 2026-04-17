@@ -15,8 +15,10 @@ interface DiscoveryHubProps {
 
 export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
   const [query, setQuery] = useState('');
+  const [searchMode, setSearchMode] = useState<'album' | 'track'>('album');
   const [loading, setLoading] = useState(false);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTracks, setAlbumTracks] = useState<Track[]>([]);
 
@@ -24,8 +26,16 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
     if (!query) return;
     setLoading(true);
     setSelectedAlbum(null);
-    const results = await MusicService.searchAlbums(query);
-    setAlbums(results);
+    
+    if (searchMode === 'album') {
+      const results = await MusicService.searchAlbums(query);
+      setAlbums(results);
+      setTracks([]);
+    } else {
+      const results = await MusicService.searchTracks(query);
+      setTracks(results);
+      setAlbums([]);
+    }
     setLoading(false);
   };
 
@@ -51,13 +61,32 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
           </div>
         </div>
 
+        <div className="flex gap-2 mb-4">
+          <Button 
+            size="sm"
+            variant={searchMode === 'album' ? 'default' : 'outline'}
+            onClick={() => setSearchMode('album')}
+            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'album' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+          >
+            Albums
+          </Button>
+          <Button 
+            size="sm"
+            variant={searchMode === 'track' ? 'default' : 'outline'}
+            onClick={() => setSearchMode('track')}
+            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'track' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+          >
+            Songs
+          </Button>
+        </div>
+
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search artist or album..."
+              placeholder={searchMode === 'album' ? "Search artist or album..." : "Search song name..."}
               className="bg-black/40 border-white/10 text-white h-10 pl-10 focus:ring-blue-500/50"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -72,40 +101,83 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="p-4">
           {!selectedAlbum ? (
             <>
-              {albums.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {albums.map((album) => (
-                    <div 
-                      key={album.id}
-                      onClick={() => handleSelectAlbum(album)}
-                      className="group cursor-pointer space-y-2 hover:bg-white/5 p-2 rounded-xl transition-all border border-transparent hover:border-white/10"
-                    >
-                      <div className="relative aspect-square overflow-hidden rounded-lg shadow-lg">
-                        <img 
-                          src={album.cover} 
-                          alt={album.title}
-                          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Music className="w-8 h-8 text-white animate-pulse" />
+              {searchMode === 'album' ? (
+                // Album Grid
+                albums.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {albums.map((album) => (
+                      <div 
+                        key={album.id}
+                        onClick={() => handleSelectAlbum(album)}
+                        className="group cursor-pointer space-y-2 hover:bg-white/5 p-2 rounded-xl transition-all border border-transparent hover:border-white/10"
+                      >
+                        <div className="relative aspect-square overflow-hidden rounded-lg shadow-lg">
+                          <img 
+                            src={album.cover} 
+                            alt={album.title}
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Music className="w-8 h-8 text-white animate-pulse" />
+                          </div>
+                        </div>
+                        <div className="px-1">
+                          <h3 className="text-sm font-semibold truncate leading-tight group-hover:text-blue-200">{album.title}</h3>
+                          <p className="text-xs text-white/40 truncate">{album.artist}</p>
                         </div>
                       </div>
-                      <div className="px-1">
-                        <h3 className="text-sm font-semibold truncate leading-tight group-hover:text-blue-200">{album.title}</h3>
-                        <p className="text-xs text-white/40 truncate">{album.artist}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                    <Library className="w-16 h-16 mb-4 stroke-[1]" />
+                    <p className="text-sm">Search for an artist or album<br/>to start exploring.</p>
+                  </div>
+                )
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                  <Library className="w-16 h-16 mb-4 stroke-[1]" />
-                  <p className="text-sm">Search for an artist or album<br/>to start exploring.</p>
-                </div>
+                // Track List
+                tracks.length > 0 ? (
+                  <div className="space-y-1">
+                    {tracks.map((track, idx) => (
+                      <div 
+                        key={track.id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 group relative cursor-pointer border border-transparent hover:border-white/5"
+                        onClick={() => onPlayTrack(track)}
+                      >
+                        <div className="relative w-10 h-10 flex-shrink-0 overflow-hidden rounded">
+                          <img src={track.cover} className="w-full h-full object-cover" alt="" />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Music className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate group-hover:text-blue-100">{track.title}</div>
+                          <div className="text-[10px] text-white/40 truncate">{track.artist} • {track.album}</div>
+                        </div>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="w-8 h-8 opacity-0 group-hover:opacity-100 hover:text-blue-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLoadAlbum([track]);
+                          }}
+                        >
+                          <Library className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                    <Music className="w-16 h-16 mb-4 stroke-[1]" />
+                    <p className="text-sm">Search for any song name<br/>to discover individual tracks.</p>
+                  </div>
+                )
               )}
             </>
           ) : (
@@ -157,7 +229,7 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
