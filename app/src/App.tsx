@@ -6,6 +6,9 @@ import { Equalizer } from '@/components/Equalizer';
 import { TopMenu } from '@/components/TopMenu';
 import { URLDialog } from '@/components/URLDialog';
 import { HelpPage } from '@/components/HelpPage';
+import { DiscoveryHub } from '@/components/DiscoveryHub';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Globe, ListMusic } from 'lucide-react';
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
 
@@ -86,6 +89,7 @@ function App() {
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'oscilloscope'>('sanyo');
+  const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
 
   // Load from localStorage
   useEffect(() => {
@@ -480,19 +484,55 @@ function App() {
           />
         </div>
 
-        {/* Column 3: Playlist - NOW FULL HEIGHT */}
-        <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50">
-          <div className="flex-1 overflow-hidden">
-            <CarPlaylist
-              tracks={playlist}
-              currentTrack={currentTrack}
-              onSelectTrack={(track) => {
-                loadTrack(track);
-                play();
-              }}
-              onRemoveTrack={removeTrack}
-            />
-          </div>
+        {/* Column 3: Multi-functional Content Hub */}
+        <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10">
+          <Tabs 
+            value={rightPanelTab} 
+            onValueChange={(val) => setRightPanelTab(val as any)}
+            className="flex-1 flex flex-col overflow-hidden"
+          >
+            <div className="p-2 border-b border-white/5 bg-black/20">
+              <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">
+                <TabsTrigger value="playlist" className="flex-1 gap-2 text-xs data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all">
+                  <ListMusic className="w-3 h-3" /> Playlist
+                </TabsTrigger>
+                <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all">
+                  <Globe className="w-3 h-3" /> Discovery
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-hidden relative">
+              {rightPanelTab === 'playlist' ? (
+                 <div className="h-full animate-in fade-in duration-300">
+                    <CarPlaylist
+                      tracks={playlist}
+                      currentTrack={currentTrack}
+                      onSelectTrack={(track) => {
+                        loadTrack(track);
+                        play();
+                      }}
+                      onRemoveTrack={removeTrack}
+                    />
+                 </div>
+              ) : (
+                <div className="h-full animate-in slide-in-from-right duration-300">
+                  <DiscoveryHub 
+                    onLoadAlbum={(tracks) => {
+                      setPlaylist(prev => [...tracks, ...prev]);
+                      setRightPanelTab('playlist');
+                    }}
+                    onPlayTrack={(track) => {
+                      // Add to playlist and play
+                      setPlaylist(prev => [track, ...prev]);
+                      loadTrack(track);
+                      play();
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </Tabs>
         </div>
 
         {/* Column 4: Speaker Right - Responsive Width */}

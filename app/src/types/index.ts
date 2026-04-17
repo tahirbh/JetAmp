@@ -7,6 +7,8 @@ export interface Track {
   url: string;
   cover?: string;
   path?: string;
+  isOnline?: boolean;
+  source?: 'local' | 'itunes' | 'deezer' | 'spotify';
 }
 
 export interface Playlist {
