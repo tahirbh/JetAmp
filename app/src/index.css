@@ -29,14 +29,14 @@
     --metal-gold-dark: #462523;
     --metal-gold-linear: linear-gradient(to bottom, #f6e27a 0%, #cb9b51 45%, #f6e27a 100%);
     
-    /* Rainbow */
-    --rainbow-1: #ff0000;
-    --rainbow-2: #ff8800;
-    --rainbow-3: #ffff00;
-    --rainbow-4: #00ff00;
-    --rainbow-5: #00ffff;
-    --rainbow-6: #0088ff;
-    --rainbow-7: #8800ff;
+    /* Rainbow Inverse (BGR) */
+    --rainbow-1: #0088ff; /* Blue */
+    --rainbow-2: #00ffff; /* Cyan */
+    --rainbow-3: #00ff00; /* Green */
+    --rainbow-4: #ffff00; /* Yellow */
+    --rainbow-5: #ff8800; /* Orange */
+    --rainbow-6: #ff0000; /* Red */
+    --rainbow-7: #ff0088; /* Magenta */
   }
 }
 

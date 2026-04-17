@@ -4,11 +4,12 @@ interface AuraVisualizerProps {
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
   isPlaying: boolean;
   barCount?: number;
-  mode?: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow';
+  mode?: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
 }
 
 const STACK_SEGMENTS = 12;
 const GAP_SIZE = 2;
+const GRAVITY = 0.5; // Controls how fast the peak drops
 
 export function AuraVisualizer({ 
   getVisualizerData, 
@@ -19,31 +20,57 @@ export function AuraVisualizer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const smoothedDataRef = useRef<number[]>(new Array(64).fill(0));
+  const peakHoldRef = useRef<number[]>(new Array(64).fill(0));
 
-  const getSegmentColor = (segmentIndex: number, totalSegments: number, visualizerMode: string): { color: string; glow: string } => {
+  const getSegmentColor = (segmentIndex: number, totalSegments: number, visualizerMode: string): { color: string; glow: string; peakBase: string } => {
     const ratio = segmentIndex / totalSegments;
+    const invRatio = 1 - ratio; // For BGR logic
     
+    // Default peak color is bright white
+    let peakBase = '#ffffff';
+
     if (visualizerMode === 'gunmetal') {
        if (ratio < 0.6) {
          const lightness = 20 + ratio * 20; 
-         return { color: `hsl(230, 10%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.1)' };
+         return { color: `hsl(230, 10%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.1)', peakBase };
        }
        if (ratio < 0.85) {
          const lightness = 40 + (ratio - 0.6) * 40;
-         return { color: `hsl(230, 5%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.2)' };
+         return { color: `hsl(230, 5%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.2)', peakBase };
        }
-       return { color: '#991111', glow: '#660000' };
+       return { color: '#991111', glow: '#660000', peakBase: '#ff0000' };
     }
 
     if (visualizerMode === 'rainbow') {
-       const hue = (segmentIndex / totalSegments) * 360;
-       return { color: `hsl(${hue}, 80%, 50%)`, glow: `hsla(${hue}, 80%, 50%, 0.5)` };
+       const hue = (invRatio) * 360; // Invert to BGR
+       return { color: `hsl(${hue}, 80%, 50%)`, glow: `hsla(${hue}, 80%, 50%, 0.5)`, peakBase };
     }
 
-    // Default Sanyo Rainbow (Green -> Yellow -> Red)
-    if (ratio < 0.6) return { color: '#22c55e', glow: 'rgba(34, 197, 94, 0.4)' }; // Green
-    if (ratio < 0.85) return { color: '#eab308', glow: 'rgba(234, 179, 8, 0.4)' }; // Yellow
-    return { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.4)' }; // Red
+    if (visualizerMode === 'sony') {
+      // Sleek icy blue / Cyan gradients
+      const lightness = 40 + ratio * 40;
+      peakBase = '#e0ffff';
+      return { color: `hsl(190, 100%, ${lightness}%)`, glow: `hsla(190, 100%, ${lightness}%, 0.4)`, peakBase };
+    }
+
+    if (visualizerMode === 'panasonic') {
+      // VFD Display (Amber/Orange)
+      const op = 0.6 + ratio * 0.4;
+      peakBase = '#ffddaa';
+      return { color: `rgba(255, 170, 0, ${op})`, glow: `rgba(255, 170, 0, ${op * 0.5})`, peakBase };
+    }
+
+    if (visualizerMode === 'akai') {
+      // Retro LED (Pure Red)
+      const r = 150 + ratio * 105;
+      peakBase = '#ffaaaa';
+      return { color: `rgb(${r}, 0, 0)`, glow: `rgba(${r}, 0, 0, 0.5)`, peakBase };
+    }
+
+    // Default Sanyo Rainbow (Inverted BGR: Blue -> Green -> Red)
+    if (ratio < 0.33) return { color: '#0088ff', glow: 'rgba(0, 136, 255, 0.4)', peakBase }; // Blue
+    if (ratio < 0.75) return { color: '#00ff00', glow: 'rgba(0, 255, 0, 0.4)', peakBase }; // Green
+    return { color: '#ff0000', glow: 'rgba(255, 0, 0, 0.4)', peakBase }; // Red
   };
 
   const draw = useCallback(() => {
@@ -59,46 +86,7 @@ export function AuraVisualizer({
     ctx.fillStyle = '#020204';
     ctx.fillRect(0, 0, width, height);
 
-    if (mode === 'sanyo' || mode === 'gunmetal' || mode === 'rainbow') {
-      const frequencies = data?.frequencies;
-      const paddingX = 10;
-      const availableWidth = width - paddingX * 2;
-      const barWidth = (availableWidth - (barCount - 1) * 4) / barCount;
-      const barGap = 4;
-      const smoothing = 0.75;
-
-      for (let i = 0; i < barCount; i++) {
-        const logIndex = Math.pow(i / barCount, 1.8);
-        const freqIndex = Math.floor(logIndex * (frequencies ? frequencies.length * 0.6 : 0));
-        
-        let rawValue = 0;
-        if (frequencies && freqIndex < frequencies.length) {
-          rawValue = frequencies[freqIndex];
-        }
-
-        smoothedDataRef.current[i] = smoothedDataRef.current[i] * smoothing + rawValue * (1 - smoothing);
-        const value = smoothedDataRef.current[i];
-        const intensity = value / 255;
-        const segmentsToShow = Math.floor(intensity * STACK_SEGMENTS);
-        const x = paddingX + i * (barWidth + barGap);
-        const segmentHeight = (height - 20) / (STACK_SEGMENTS + 1);
-        
-        for (let s = 0; s < STACK_SEGMENTS; s++) {
-          const segmentY = height - 10 - (s + 1) * (segmentHeight + GAP_SIZE);
-          const { color, glow } = getSegmentColor(s, STACK_SEGMENTS, mode);
-          if (s < segmentsToShow) {
-            ctx.shadowBlur = s < segmentsToShow - 1 ? 0 : 15; // Only glow the top segment
-            ctx.shadowColor = glow;
-            ctx.fillStyle = color;
-            ctx.fillRect(x, segmentY, barWidth, segmentHeight);
-          } else {
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = 'rgba(40, 40, 50, 0.15)';
-            ctx.fillRect(x, segmentY, barWidth, segmentHeight);
-          }
-        }
-      }
-    } else {
+    if (mode === 'oscilloscope') {
       // DIGITAL OSCILLOSCOPE
       const waveform = data?.waveform;
       if (!waveform) return;
@@ -125,6 +113,72 @@ export function AuraVisualizer({
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(0, 242, 255, 0.03)';
       for(let i = 0; i < height; i += 4) ctx.fillRect(0, i, width, 1);
+    } else {
+      // STACKED BARS (All other modes)
+      const frequencies = data?.frequencies;
+      const paddingX = 10;
+      const availableWidth = width - paddingX * 2;
+      const barWidth = mode === 'sony' ? (availableWidth - (barCount - 1) * 6) / barCount : (availableWidth - (barCount - 1) * 4) / barCount;
+      const barGap = mode === 'sony' ? 6 : 4;
+      const smoothing = 0.75;
+
+      for (let i = 0; i < barCount; i++) {
+        const logIndex = Math.pow(i / barCount, 1.8);
+        const freqIndex = Math.floor(logIndex * (frequencies ? frequencies.length * 0.6 : 0));
+        
+        let rawValue = 0;
+        if (frequencies && freqIndex < frequencies.length) {
+          rawValue = frequencies[freqIndex];
+        }
+
+        smoothedDataRef.current[i] = smoothedDataRef.current[i] * smoothing + rawValue * (1 - smoothing);
+        const value = smoothedDataRef.current[i];
+        
+        // Peak Logic
+        if (value >= peakHoldRef.current[i]) {
+          peakHoldRef.current[i] = value;
+        } else {
+          peakHoldRef.current[i] = Math.max(0, peakHoldRef.current[i] - GRAVITY);
+        }
+
+        const intensity = value / 255;
+        const peakIntensity = peakHoldRef.current[i] / 255;
+        
+        const segmentsToShow = Math.floor(intensity * STACK_SEGMENTS);
+        const peakSegment = Math.min(STACK_SEGMENTS - 1, Math.floor(peakIntensity * STACK_SEGMENTS));
+        
+        const x = paddingX + i * (barWidth + barGap);
+        const segmentHeight = (height - 20) / (STACK_SEGMENTS + 1);
+        
+        let lastPeakColor = '#ffffff';
+
+        for (let s = 0; s < STACK_SEGMENTS; s++) {
+          const segmentY = height - 10 - (s + 1) * (segmentHeight + GAP_SIZE);
+          const { color, glow, peakBase } = getSegmentColor(s, STACK_SEGMENTS, mode);
+          if (s === peakSegment) lastPeakColor = peakBase;
+
+          if (s < segmentsToShow) {
+            ctx.shadowBlur = s < segmentsToShow - 1 ? 0 : 15; // Only glow the top segment
+            ctx.shadowColor = glow;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, segmentY, barWidth, segmentHeight);
+          } else {
+             // Unlit background segments
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(40, 40, 50, 0.15)';
+            ctx.fillRect(x, segmentY, barWidth, segmentHeight);
+          }
+        }
+
+        // Draw gravity peak bar
+        if (peakSegment > 0) {
+           const peakY = height - 10 - (peakSegment + 1) * (segmentHeight + GAP_SIZE);
+           ctx.shadowBlur = 10;
+           ctx.shadowColor = lastPeakColor;
+           ctx.fillStyle = lastPeakColor;
+           ctx.fillRect(x, peakY, barWidth, Math.max(2, segmentHeight / 3)); // Gravity lines are slightly thinner
+        }
+      }
     }
   }, [getVisualizerData, isPlaying, barCount, mode]);
 
@@ -137,11 +191,21 @@ export function AuraVisualizer({
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, [draw]);
 
+  const displayModes = {
+    sanyo: 'Sanyo Spectrum',
+    sony: 'Sony Crystal',
+    panasonic: 'Panasonic VFD',
+    akai: 'AKAI Pro Analog',
+    gunmetal: 'Pro Analyzer',
+    rainbow: 'Dynamic Rainbow',
+    oscilloscope: 'Aura Oscilloscope'
+  };
+
   return (
     <div className="relative w-full h-full spectrum-container overflow-hidden rounded-xl border border-white/5">
       <canvas ref={canvasRef} width={640} height={180} className="w-full h-full" style={{ imageRendering: 'crisp-edges' }} />
       <div className="absolute top-2 left-4 text-[10px] text-[var(--glow-cyan)]/60 font-black tracking-[0.4em] uppercase">
-        {mode === 'sanyo' ? 'Signal Spectrum' : mode === 'gunmetal' ? 'Pro Analyzer' : mode === 'rainbow' ? 'Dynamic Rainbow' : 'Aura Oscilloscope'}
+        {displayModes[mode as keyof typeof displayModes] || mode}
       </div>
     </div>
   );

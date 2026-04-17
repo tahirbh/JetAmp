@@ -6,12 +6,12 @@ export interface Album {
   title: string;
   artist: string;
   cover: string;
-  source: 'itunes' | 'deezer';
+  source: 'audius' | 'itunes' | 'deezer';
 }
 
 export const MusicService = {
   /**
-   * Search for albums using iTunes and Deezer APIs
+   * Search for playlists/albums using Audius API
    */
   searchAlbums: async (query: string): Promise<Album[]> => {
     if (!query || query.length < 2) return [];
@@ -19,23 +19,16 @@ export const MusicService = {
     try {
       const term = encodeURIComponent(query);
       
-      // iTunes Search API (Albums)
-      const itunesResponse = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=50`);
-      const itunesData = await itunesResponse.json();
+      const response = await fetch(`https://discoveryprovider.audius.co/v1/playlists/search?query=${term}&app_name=JetAmp`);
+      const data = await response.json();
       
-      const itunesAlbums: Album[] = (itunesData.results || []).map((album: any) => ({
-        id: album.collectionId.toString(),
-        title: album.collectionName,
-        artist: album.artistName,
-        cover: album.artworkUrl100.replace('100x100bb', '600x600bb'),
-        source: 'itunes'
+      return (data.data || []).map((album: any) => ({
+        id: album.id,
+        title: album.playlist_name,
+        artist: album.user?.name || 'Unknown',
+        cover: album.artwork?.['480x480'] || album.artwork?.['150x150'] || '',
+        source: 'audius'
       }));
-
-      // Deezer Search API (Albums)
-      // Note: Deezer often requires a proxy due to CORS, but their search sometimes works directly or via specific headers
-      // For this implementation, we'll focus on iTunes as it's the most reliable without a custom proxy.
-      
-      return itunesAlbums;
     } catch (e) {
       console.error('Album search failed:', e);
       return [];
@@ -43,29 +36,23 @@ export const MusicService = {
   },
 
   /**
-   * Get tracklist for a specific album from iTunes
+   * Get tracklist for a specific playlist/album from Audius
    */
   getAlbumTracks: async (albumId: string): Promise<Track[]> => {
     try {
-      // iTunes Lookup API
-      const response = await fetch(`https://itunes.apple.com/lookup?id=${albumId}&entity=song`);
+      const response = await fetch(`https://discoveryprovider.audius.co/v1/playlists/${albumId}/tracks?app_name=JetAmp`);
       const data = await response.json();
       
-      // First result is the album, subsequent are the songs
-      const songs = data.results.slice(1);
-      
-      return songs.map((song: any) => ({
+      return (data.data || []).map((song: any) => ({
         id: generateId(), 
-        title: song.trackName,
-        artist: song.artistName,
-        album: song.collectionName,
-        // ITunes only provides 30s previews. Setting duration to 30 ensures 
-        // the seeker fidelity is correct and matching the playable audio.
-        duration: 30, 
-        url: song.previewUrl,
-        cover: song.artworkUrl100.replace('100x100bb', '600x600bb'),
+        title: song.title,
+        artist: song.user?.name || 'Unknown Artist',
+        album: 'Audius Collection',
+        duration: song.duration,
+        url: `https://discoveryprovider.audius.co/v1/tracks/${song.id}/stream?app_name=JetAmp`,
+        cover: song.artwork?.['480x480'] || song.artwork?.['150x150'] || '',
         isOnline: true,
-        source: 'itunes'
+        source: 'audius'
       }));
     } catch (e) {
       console.error('Failed to fetch album tracks:', e);
@@ -74,24 +61,24 @@ export const MusicService = {
   },
 
   /**
-   * Universal search for tracks (top results)
+   * Universal search for tracks (top results) from Audius
    */
   searchTracks: async (query: string): Promise<Track[]> => {
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=30`);
+      const response = await fetch(`https://discoveryprovider.audius.co/v1/tracks/search?query=${term}&app_name=JetAmp`);
       const data = await response.json();
       
-      return (data.results || []).map((song: any) => ({
+      return (data.data || []).map((song: any) => ({
         id: generateId(),
-        title: song.trackName,
-        artist: song.artistName,
-        album: song.collectionName,
-        duration: 30, // Regularized for preview playback
-        url: song.previewUrl,
-        cover: song.artworkUrl100.replace('100x100bb', '600x600bb'),
+        title: song.title,
+        artist: song.user?.name || 'Unknown Artist',
+        album: 'Audius Track',
+        duration: song.duration,
+        url: `https://discoveryprovider.audius.co/v1/tracks/${song.id}/stream?app_name=JetAmp`,
+        cover: song.artwork?.['480x480'] || song.artwork?.['150x150'] || '',
         isOnline: true,
-        source: 'itunes'
+        source: 'audius'
       }));
     } catch (e) {
       console.error('Track search failed:', e);

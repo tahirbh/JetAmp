@@ -26,9 +26,9 @@ interface TopMenuProps {
   onPrev: () => void;
   onNext: () => void;
   onShowHelp: () => void;
-  onSetVisualizerStyle: (style: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
+  onSetVisualizerStyle: (style: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
   isPlaying: boolean;
-  currentStyle: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow';
+  currentStyle: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
 }
 
 export function TopMenu({
@@ -108,7 +108,25 @@ export function TopMenu({
                   onClick={() => onSetVisualizerStyle('sanyo')}
                   className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'sanyo' ? 'text-green-400 font-bold' : ''}`}
                 >
-                  Classic Spectrum (Green) {currentStyle === 'sanyo' && '✓'}
+                  Sanyo Spectrum (BGR) {currentStyle === 'sanyo' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('sony')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'sony' ? 'text-cyan-400 font-bold' : ''}`}
+                >
+                  Sony Crystal {currentStyle === 'sony' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('panasonic')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'panasonic' ? 'text-orange-400 font-bold' : ''}`}
+                >
+                  Panasonic VFD {currentStyle === 'panasonic' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('akai')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'akai' ? 'text-red-500 font-bold' : ''}`}
+                >
+                  AKAI Pro Analog {currentStyle === 'akai' && '✓'}
                 </MenubarItem>
                 <MenubarItem 
                   onClick={() => onSetVisualizerStyle('gunmetal')}
@@ -120,18 +138,19 @@ export function TopMenu({
                   onClick={() => onSetVisualizerStyle('oscilloscope')}
                   className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'oscilloscope' ? 'text-cyan-400 font-bold' : ''}`}
                 >
-                  Digital Oscilloscope {currentStyle === 'oscilloscope' && '✓'}
+                  Aura Oscilloscope {currentStyle === 'oscilloscope' && '✓'}
                 </MenubarItem>
                 <MenubarItem 
                   onClick={() => onSetVisualizerStyle('rainbow')}
                   className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'rainbow' ? 'text-purple-400 font-bold' : ''}`}
                 >
-                  Aura Rainbow {currentStyle === 'rainbow' && '✓'}
+                  Dynamic Rainbow {currentStyle === 'rainbow' && '✓'}
                 </MenubarItem>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarContent>
         </MenubarMenu>
+
 
         <MenubarMenu>
           <MenubarTrigger className="data-[state=open]:bg-[var(--metal-dark)] text-gray-300 hover:text-white transition-colors cursor-pointer px-4">
