@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, Loader2, Music, ExternalLink, Library } from 'lucide-react';
 import { MusicService } from '@/lib/musicService';
 import type { Album } from '@/lib/musicService';
