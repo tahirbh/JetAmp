@@ -68,6 +68,8 @@ function App() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const playerRef = useRef<any>(null); // Ref for ReactPlayer
+  const simDataRef = useRef<{ frequencies: Uint8Array; waveform: Uint8Array } | null>(null);
+  const simBeatRef = useRef<number>(0);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
@@ -401,13 +403,39 @@ function App() {
   }, [currentTrack, pause]);
 
   const getVisualizerData = useCallback(() => {
+    // If playing YouTube, generate simulated data if we haven't already or if we need an update
+    if (currentTrack?.source === 'youtube' && isPlaying) {
+      if (!simDataRef.current) {
+        simDataRef.current = {
+          frequencies: new Uint8Array(256), // Simplified fftSize equivalent
+          waveform: new Uint8Array(256)
+        };
+      }
+
+      const { frequencies, waveform } = simDataRef.current;
+      const time = performance.now() / 1000;
+      
+      // Update beat logic
+      simBeatRef.current += 0.05;
+      const beat = Math.sin(simBeatRef.current) * 0.5 + 0.5;
+      
+      for (let i = 0; i < frequencies.length; i++) {
+        // Generate a vibrant "pulse" pattern
+        const base = 40 + Math.sin(time * 2 + i * 0.1) * 20;
+        const pulse = beat * (255 - i * 0.8) * (0.3 + Math.random() * 0.2);
+        frequencies[i] = Math.min(255, base + pulse);
+        waveform[i] = 128 + Math.sin(time * 10 + i * 0.2) * 50 * beat;
+      }
+      return { frequencies, waveform };
+    }
+
     if (!analyserRef.current) return null;
     const frequencies = new Uint8Array(analyserRef.current.frequencyBinCount);
     const waveform = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(frequencies);
     analyserRef.current.getByteTimeDomainData(waveform);
     return { frequencies, waveform };
-  }, []);
+  }, [currentTrack, isPlaying]);
 
   useEffect(() => {
     return () => {

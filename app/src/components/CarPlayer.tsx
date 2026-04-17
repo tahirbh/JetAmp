@@ -119,6 +119,7 @@ export function CarPlayer({
                       url={currentTrack.url}
                       playing={isPlaying}
                       volume={volume}
+                      muted={false}
                       width="100%"
                       height="100%"
                       onProgress={(s: any) => onProgress?.(s)}
@@ -129,7 +130,9 @@ export function CarPlayer({
                             showinfo: 0, 
                             controls: 0, 
                             modestbranding: 1, 
-                            rel: 0 
+                            rel: 0,
+                            autoplay: 1,
+                            mute: 0
                           }
                         } 
                       } as any}

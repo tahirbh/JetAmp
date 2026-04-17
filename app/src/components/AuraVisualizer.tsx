@@ -107,7 +107,7 @@ export function AuraVisualizer({
     if (!ctx) return;
 
     const { width, height } = canvas;
-    const data = isSimulated ? generateSimulatedData() : getVisualizerData();
+    const data = getVisualizerData();
 
     // Clear background
     ctx.fillStyle = '#020204';
