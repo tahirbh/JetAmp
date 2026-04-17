@@ -12,6 +12,7 @@ import { Globe, ListMusic } from 'lucide-react';
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
 import { AuthService } from '@/lib/authService';
+import type { UserProfile } from '@/lib/authService';
 
 // Parse metadata from audio files
 const parseAudioMetadata = async (file: File): Promise<Partial<Track>> => {
@@ -91,14 +92,16 @@ function App() {
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
+  const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
 
   // Load from localStorage & Handle OAuth Callback
   useEffect(() => {
     // Check for OAuth callback in URL hash
     if (window.location.hash) {
-      const user = AuthService.handleCallback();
-      if (user) {
-        AuthService.saveUser(user);
+      const newUser = AuthService.handleCallback();
+      if (newUser) {
+        AuthService.saveUser(newUser);
+        setUser(newUser); // Update React state immediately
         window.location.hash = ''; // Clear hash
       }
     }
@@ -454,6 +457,7 @@ function App() {
                  <CarPlaylist tracks={playlist} currentTrack={currentTrack} onSelectTrack={(t) => { loadTrack(t); play(); }} onRemoveTrack={removeTrack} />
               ) : (
                  <DiscoveryHub 
+                   user={user}
                    currentTrack={currentTrack}
                    onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
                    onPlayTrack={(t) => {

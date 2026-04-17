@@ -13,13 +13,13 @@ import { useEffect } from 'react';
 import { LogIn } from 'lucide-react';
 
 interface DiscoveryHubProps {
+  user: UserProfile | null;
   currentTrack: Track | null;
   onLoadAlbum: (tracks: Track[]) => void;
   onPlayTrack: (track: Track) => void;
 }
 
-export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
-  const [user] = useState<UserProfile | null>(AuthService.getUser());
+export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<'album' | 'track'>('album');
   const [loading, setLoading] = useState(false);
@@ -111,6 +111,19 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
           <div>
             <h2 className="text-lg font-bold tracking-tight text-blue-50">YouTube Music</h2>
             <p className="text-xs text-blue-300/60 font-medium">Your Personal Library</p>
+          </div>
+          <div className="ml-auto">
+             <Button 
+               size="sm" 
+               variant="ghost" 
+               className="text-[10px] text-white/40 hover:text-red-400 uppercase font-black tracking-widest px-2 h-7"
+               onClick={() => {
+                 AuthService.logout();
+                 window.location.reload(); // Hard reload to clear all states
+               }}
+             >
+               Logout
+             </Button>
           </div>
         </div>
 
