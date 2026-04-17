@@ -71,12 +71,13 @@ export const YouTubeService = {
     }
   },
 
-  searchTracks: async (query: string): Promise<Track[]> => {
+  searchTracks: async (query: string, type: 'music' | 'video' = 'music'): Promise<Track[]> => {
     const user = AuthService.getUser();
     if (!user || !user.token) return [];
 
     try {
-      const response = await fetch(`${BASE_URL}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&maxResults=25`, {
+      const categoryFilter = type === 'music' ? '&videoCategoryId=10' : '';
+      const response = await fetch(`${BASE_URL}/search?part=snippet&q=${encodeURIComponent(query)}&type=video${categoryFilter}&maxResults=25`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
@@ -87,7 +88,7 @@ export const YouTubeService = {
         id: generateId(),
         title: item.snippet.title,
         artist: item.snippet.channelTitle,
-        album: 'YouTube Result',
+        album: type === 'music' ? 'YouTube Music' : 'YouTube Video',
         duration: 0,
         url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         path: item.id.videoId,

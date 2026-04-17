@@ -21,7 +21,7 @@ interface DiscoveryHubProps {
 
 export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
   const [query, setQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<'album' | 'track'>('album');
+  const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('album');
   const [loading, setLoading] = useState(false);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -52,15 +52,17 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
     setLoading(true);
     setSelectedAlbum(null);
     
-    if (searchMode === 'album') {
-      // For YouTube, "album" search is basically searching for playlists/channels
-      // But let's stick to Audius for global discovery if the user wants, or just YouTube Search
       const results = await MusicService.searchAlbums(query);
       setAlbums(results);
       setTracks([]);
+    } else if (searchMode === 'track') {
+      // Search tracks on YouTube (Music only)
+      const results = await YouTubeService.searchTracks(query, 'music');
+      setTracks(results);
+      setAlbums([]);
     } else {
-      // Search tracks on YouTube
-      const results = await YouTubeService.searchTracks(query);
+      // Search videos on YouTube (All categories)
+      const results = await YouTubeService.searchTracks(query, 'video');
       setTracks(results);
       setAlbums([]);
     }
@@ -144,6 +146,14 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
           >
             Songs
           </Button>
+          <Button 
+            size="sm"
+            variant={searchMode === 'video' ? 'default' : 'outline'}
+            onClick={() => setSearchMode('video')}
+            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'video' ? 'bg-blue-600 border-none' : 'border-white/10 hover:bg-white/5'}`}
+          >
+            Videos
+          </Button>
         </div>
 
         <div className="flex gap-2">
@@ -152,7 +162,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={searchMode === 'album' ? "Search artist or album..." : "Search song name..."}
+              placeholder={searchMode === 'album' ? "Search playlists..." : searchMode === 'track' ? "Search songs..." : "Search any video..."}
               className="bg-black/40 border-white/10 text-white h-10 pl-10 focus:ring-blue-500/50"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -207,9 +217,37 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
               ) : (
                 // Track List
                 tracks.length > 0 ? (
-                  <div className="space-y-1">
+                  <div className={searchMode === 'video' ? "grid grid-cols-1 gap-4" : "space-y-1"}>
                     {tracks.map((track) => {
                       const isCurrent = currentTrack?.url === track.url || (currentTrack?.title === track.title && currentTrack?.artist === track.artist);
+                      
+                      if (searchMode === 'video') {
+                        return (
+                          <div 
+                            key={track.id}
+                            className={`group relative cursor-pointer overflow-hidden rounded-xl border transition-all ${
+                              isCurrent ? 'border-blue-500/50 bg-blue-500/5' : 'border-white/5 hover:border-white/20 bg-white/5'
+                            }`}
+                            onClick={() => onPlayTrack(track)}
+                          >
+                            <div className="aspect-video relative overflow-hidden">
+                              <img src={track.cover} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" alt="" />
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                              <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-[9px] font-bold text-white uppercase tracking-wider">HD</div>
+                            </div>
+                            <div className="p-3 space-y-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className={`text-xs font-bold leading-tight line-clamp-2 ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</h3>
+                                <div className="p-1 rounded bg-white/5">
+                                   <Music className={`w-3 h-3 ${isCurrent ? 'animate-pulse text-blue-400' : 'text-white/20'}`} />
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-white/40 font-medium">{track.artist}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div 
                           key={track.id}
@@ -253,7 +291,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                     <Music className="w-16 h-16 mb-4 stroke-[1]" />
-                    <p className="text-sm">Search for any song name<br/>to discover individual tracks.</p>
+                    <p className="text-sm">Search for any {searchMode === 'video' ? 'video' : 'song'}<br/>to start exploring.</p>
                   </div>
                 )
               )}
