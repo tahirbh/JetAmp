@@ -55,12 +55,14 @@ export const MusicService = {
       const songs = data.results.slice(1);
       
       return songs.map((song: any) => ({
-        id: generateId(), // Track instance ID
+        id: generateId(), 
         title: song.trackName,
         artist: song.artistName,
         album: song.collectionName,
-        duration: song.trackTimeMillis / 1000,
-        url: song.previewUrl, // 30s preview URL
+        // ITunes only provides 30s previews. Setting duration to 30 ensures 
+        // the seeker fidelity is correct and matching the playable audio.
+        duration: 30, 
+        url: song.previewUrl,
         cover: song.artworkUrl100.replace('100x100bb', '600x600bb'),
         isOnline: true,
         source: 'itunes'
@@ -85,7 +87,7 @@ export const MusicService = {
         title: song.trackName,
         artist: song.artistName,
         album: song.collectionName,
-        duration: song.trackTimeMillis / 1000,
+        duration: 30, // Regularized for preview playback
         url: song.previewUrl,
         cover: song.artworkUrl100.replace('100x100bb', '600x600bb'),
         isOnline: true,

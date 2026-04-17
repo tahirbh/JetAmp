@@ -239,12 +239,15 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-medium truncate ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</div>
                         <div className="text-[10px] text-white/40 truncate flex items-center gap-1">
-                          {track.duration > 0 && (
+                          {track.source === 'itunes' ? (
+                            <span className="text-blue-400 font-bold bg-blue-500/10 px-1 rounded flex items-center gap-1">
+                              <ExternalLink className="w-2 h-2" /> 30s PREVIEW
+                            </span>
+                          ) : track.duration > 0 && (
                             <span className="flex items-center gap-1 opacity-60">
-                              {Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')} •
+                              {Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')}
                             </span>
                           )}
-                          <ExternalLink className="w-2 h-2" /> iTunes Preview
                         </div>
                       </div>
                     </div>
