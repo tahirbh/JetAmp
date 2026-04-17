@@ -51,7 +51,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
     if (!query) return;
     setLoading(true);
     setSelectedAlbum(null);
-    
+    if (searchMode === 'album') {
       const results = await MusicService.searchAlbums(query);
       setAlbums(results);
       setTracks([]);
