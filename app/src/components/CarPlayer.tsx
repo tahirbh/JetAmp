@@ -1,3 +1,4 @@
+import ReactPlayer from 'react-player';
 import { useState, useRef, useEffect } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward,
@@ -25,6 +26,9 @@ interface CarPlayerProps {
   onToggleEqualizer: () => void;
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
   visualizerStyle?: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
+  onProgress?: (state: { playedSeconds: number }) => void;
+  onDuration?: (duration: number) => void;
+  playerRef?: React.RefObject<any>;
 }
 
 export function CarPlayer({
@@ -45,6 +49,9 @@ export function CarPlayer({
   onToggleEqualizer,
   getVisualizerData,
   visualizerStyle = 'sanyo',
+  onProgress,
+  onDuration,
+  playerRef
 }: CarPlayerProps) {
   const [bassLevel, setBassLevel] = useState(0);
   const frameRef = useRef<number | undefined>(undefined);
@@ -88,6 +95,7 @@ export function CarPlayer({
             isPlaying={isPlaying}
             barCount={24}
             mode={visualizerStyle}
+            isSimulated={currentTrack?.source === 'youtube'}
           />
           <div className="absolute bottom-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
         </div>
@@ -100,13 +108,46 @@ export function CarPlayer({
         <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[340px] aspect-square mt-6">
           
           {/* Layer 1: Rotating CD (Behind) */}
-          <div className="z-10 w-full h-full flex items-center justify-center">
-            <RotatingCD
-              coverUrl={currentTrack?.cover}
-              isPlaying={isPlaying}
-              size={undefined} 
-              bassLevel={bassLevel}
-            />
+          <div className="z-10 w-full h-full flex items-center justify-center relative overflow-hidden rounded-full shadow-[0_0_50px_rgba(0,0,0,0.8)] border-4 border-[var(--metal-dark)]">
+            {currentTrack?.source === 'youtube' ? (
+              <div className="w-full h-full bg-black flex items-center justify-center">
+                {((): any => {
+                  const Player = ReactPlayer as any;
+                  return (
+                    <Player
+                      ref={playerRef}
+                      url={currentTrack.url}
+                      playing={isPlaying}
+                      volume={volume}
+                      width="100%"
+                      height="100%"
+                      onProgress={(s: any) => onProgress?.(s)}
+                      onDuration={(d: any) => onDuration?.(d)}
+                      config={{ 
+                        youtube: { 
+                          playerVars: { 
+                            showinfo: 0, 
+                            controls: 0, 
+                            modestbranding: 1, 
+                            rel: 0 
+                          }
+                        } 
+                      } as any}
+                      style={{ position: 'absolute', top: 0, left: 0 }}
+                    />
+                  );
+                })()}
+                {/* Overlay to prevent interaction with the iframe but allow custom controls */}
+                <div className="absolute inset-0 z-10" />
+              </div>
+            ) : (
+              <RotatingCD
+                coverUrl={currentTrack?.cover}
+                isPlaying={isPlaying}
+                size={undefined} 
+                bassLevel={bassLevel}
+              />
+            )}
           </div>
 
           {/* Layer 2: Track Info Overlay (Front & Centered) */}

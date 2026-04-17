@@ -21,20 +21,28 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTracks, setAlbumTracks] = useState<Track[]>([]);
+  const [searchSource, setSearchSource] = useState<'audius' | 'youtube'>('audius');
 
   const handleSearch = async () => {
     if (!query) return;
     setLoading(true);
     setSelectedAlbum(null);
     
-    if (searchMode === 'album') {
-      const results = await MusicService.searchAlbums(query);
-      setAlbums(results);
-      setTracks([]);
-    } else {
-      const results = await MusicService.searchTracks(query);
+    if (searchSource === 'youtube') {
+      const results = await MusicService.searchYouTube(query);
       setTracks(results);
       setAlbums([]);
+      setSearchMode('track');
+    } else {
+      if (searchMode === 'album') {
+        const results = await MusicService.searchAlbums(query);
+        setAlbums(results);
+        setTracks([]);
+      } else {
+        const results = await MusicService.searchTracks(query);
+        setTracks(results);
+        setAlbums([]);
+      }
     }
     setLoading(false);
   };
@@ -55,9 +63,25 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
           <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
             <Search className="w-5 h-5 text-blue-400" />
           </div>
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-bold tracking-tight text-blue-50">Content Hub</h2>
-            <p className="text-xs text-blue-300/60 font-medium">Browse Global Music</p>
+            <div className="flex gap-2 mt-1">
+              <button 
+                onClick={() => setSearchSource('audius')}
+                className={`text-[8px] uppercase tracking-tighter px-1.5 py-0.5 rounded border transition-all ${searchSource === 'audius' ? 'bg-blue-500 text-white border-blue-400' : 'text-blue-300/40 border-blue-300/10 hover:border-blue-300/30'}`}
+              >
+                Audius (Free)
+              </button>
+              <button 
+                onClick={() => {
+                  setSearchSource('youtube');
+                  setSearchMode('track');
+                }}
+                className={`text-[8px] uppercase tracking-tighter px-1.5 py-0.5 rounded border transition-all ${searchSource === 'youtube' ? 'bg-red-600 text-white border-red-500' : 'text-red-400/40 border-red-400/10 hover:border-red-400/30'}`}
+              >
+                YouTube
+              </button>
+            </div>
           </div>
         </div>
 
@@ -65,8 +89,9 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
           <Button 
             size="sm"
             variant={searchMode === 'album' ? 'default' : 'outline'}
-            onClick={() => setSearchMode('album')}
-            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'album' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+            onClick={() => searchSource === 'audius' && setSearchMode('album')}
+            disabled={searchSource === 'youtube'}
+            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'album' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5 disabled:opacity-30'}`}
           >
             Albums
           </Button>
@@ -74,7 +99,7 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
             size="sm"
             variant={searchMode === 'track' ? 'default' : 'outline'}
             onClick={() => setSearchMode('track')}
-            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'track' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'track' ? (searchSource === 'youtube' ? 'bg-red-600' : 'bg-blue-600') : 'border-white/10 hover:bg-white/5'}`}
           >
             Songs
           </Button>
@@ -86,7 +111,7 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={searchMode === 'album' ? "Search artist or album..." : "Search song name..."}
+              placeholder={searchSource === 'youtube' ? "Search YouTube..." : (searchMode === 'album' ? "Search artist or album..." : "Search song name...")}
               className="bg-black/40 border-white/10 text-white h-10 pl-10 focus:ring-blue-500/50"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -94,7 +119,7 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
           <Button 
             onClick={handleSearch} 
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-500 h-10 px-4 transition-all active:scale-95"
+            className={`${searchSource === 'youtube' ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'} h-10 px-4 transition-all active:scale-95`}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
           </Button>

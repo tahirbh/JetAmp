@@ -5,6 +5,7 @@ interface AuraVisualizerProps {
   isPlaying: boolean;
   barCount?: number;
   mode?: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
+  isSimulated?: boolean;
 }
 
 const STACK_SEGMENTS = 12;
@@ -15,14 +16,44 @@ export function AuraVisualizer({
   getVisualizerData, 
   isPlaying, 
   barCount = 24,
-  mode = 'sanyo'
+  mode = 'sanyo',
+  isSimulated = false
 }: AuraVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const smoothedDataRef = useRef<number[]>(new Array(64).fill(0));
   const peakHoldRef = useRef<number[]>(new Array(64).fill(0));
+  const simulationSeedRef = useRef<number[]>(new Array(64).fill(0).map(() => Math.random()));
+
+  const generateSimulatedData = useCallback(() => {
+    const frequencies = new Uint8Array(64);
+    const waveform = new Uint8Array(64);
+    const time = Date.now() / 1000;
+
+    for (let i = 0; i < 64; i++) {
+      if (!isPlaying) {
+        frequencies[i] = 0;
+        waveform[i] = 128;
+        continue;
+      }
+
+      // Create a complex pulse using sine waves and noise
+      const base = Math.sin(time * 2 + i * 0.2) * 0.5 + 0.5;
+      const noise = Math.sin(time * 10 + simulationSeedRef.current[i] * 20) * 0.3;
+      const pulse = Math.max(0, (base + noise) * 200);
+      
+      // Add 'beat' spikes randomly
+      const beat = Math.sin(time * 4) > 0.8 ? Math.random() * 50 : 0;
+      
+      frequencies[i] = Math.min(255, pulse + beat);
+      waveform[i] = 128 + Math.sin(time * 20 + i * 0.5) * 50;
+    }
+
+    return { frequencies, waveform };
+  }, [isPlaying]);
 
   const getSegmentColor = (segmentIndex: number, totalSegments: number, visualizerMode: string): { color: string; glow: string; peakBase: string } => {
+    // ... existing color logic ...
     const ratio = segmentIndex / totalSegments;
     const invRatio = 1 - ratio; // For BGR logic
     
@@ -47,27 +78,23 @@ export function AuraVisualizer({
     }
 
     if (visualizerMode === 'sony') {
-      // Sleek icy blue / Cyan gradients
       const lightness = 40 + ratio * 40;
       peakBase = '#e0ffff';
       return { color: `hsl(190, 100%, ${lightness}%)`, glow: `hsla(190, 100%, ${lightness}%, 0.4)`, peakBase };
     }
 
     if (visualizerMode === 'panasonic') {
-      // VFD Display (Amber/Orange)
       const op = 0.6 + ratio * 0.4;
       peakBase = '#ffddaa';
       return { color: `rgba(255, 170, 0, ${op})`, glow: `rgba(255, 170, 0, ${op * 0.5})`, peakBase };
     }
 
     if (visualizerMode === 'akai') {
-      // Retro LED (Pure Red)
       const r = 150 + ratio * 105;
       peakBase = '#ffaaaa';
       return { color: `rgb(${r}, 0, 0)`, glow: `rgba(${r}, 0, 0, 0.5)`, peakBase };
     }
 
-    // Default Sanyo Rainbow (Inverted BGR: Blue -> Green -> Red)
     if (ratio < 0.33) return { color: '#0088ff', glow: 'rgba(0, 136, 255, 0.4)', peakBase }; // Blue
     if (ratio < 0.75) return { color: '#00ff00', glow: 'rgba(0, 255, 0, 0.4)', peakBase }; // Green
     return { color: '#ff0000', glow: 'rgba(255, 0, 0, 0.4)', peakBase }; // Red
@@ -80,7 +107,7 @@ export function AuraVisualizer({
     if (!ctx) return;
 
     const { width, height } = canvas;
-    const data = getVisualizerData();
+    const data = isSimulated ? generateSimulatedData() : getVisualizerData();
 
     // Clear background
     ctx.fillStyle = '#020204';
@@ -120,7 +147,7 @@ export function AuraVisualizer({
       const availableWidth = width - paddingX * 2;
       const barWidth = mode === 'sony' ? (availableWidth - (barCount - 1) * 6) / barCount : (availableWidth - (barCount - 1) * 4) / barCount;
       const barGap = mode === 'sony' ? 6 : 4;
-      const smoothing = 0.75;
+      const smoothing = isSimulated ? 0.3 : 0.75; // Less smoothing for simulation to feel punchy
 
       for (let i = 0; i < barCount; i++) {
         const logIndex = Math.pow(i / barCount, 1.8);
@@ -180,7 +207,7 @@ export function AuraVisualizer({
         }
       }
     }
-  }, [getVisualizerData, isPlaying, barCount, mode]);
+  }, [getVisualizerData, isPlaying, barCount, mode, isSimulated, generateSimulatedData]);
 
   useEffect(() => {
     const animate = () => {
@@ -205,7 +232,8 @@ export function AuraVisualizer({
     <div className="relative w-full h-full spectrum-container overflow-hidden rounded-xl border border-white/5">
       <canvas ref={canvasRef} width={640} height={180} className="w-full h-full" style={{ imageRendering: 'crisp-edges' }} />
       <div className="absolute top-2 left-4 text-[10px] text-[var(--glow-cyan)]/60 font-black tracking-[0.4em] uppercase">
-        {displayModes[mode as keyof typeof displayModes] || mode}
+        {displayModes[mode as keyof typeof displayModes] || mode} 
+        {isSimulated && <span className="ml-2 text-[8px] opacity-40">(Simulated)</span>}
       </div>
     </div>
   );

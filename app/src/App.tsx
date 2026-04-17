@@ -67,6 +67,7 @@ function App() {
   // Audio refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<any>(null); // Ref for ReactPlayer
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
@@ -204,6 +205,15 @@ function App() {
 
     audio.pause();
     
+    // If it's a YouTube track, we don't set audio.src
+    if (track.source === 'youtube') {
+      setCurrentTrack(track);
+      setCurrentTime(0);
+      setDuration(track.duration || 0);
+      setIsPlaying(true);
+      return;
+    }
+    
     if (!track.url) return;
 
     // Reset state before load
@@ -274,11 +284,16 @@ function App() {
   }, []);
 
   const seek = useCallback((time: number) => {
-    if (audioElementRef.current) {
+    if (currentTrack?.source === 'youtube') {
+      setCurrentTime(time);
+      if (playerRef.current) {
+        playerRef.current.seekTo(time, 'seconds');
+      }
+    } else if (audioElementRef.current) {
       audioElementRef.current.currentTime = time;
       setCurrentTime(time);
     }
-  }, []);
+  }, [currentTrack]);
 
   const changeVolume = useCallback((vol: number) => {
     setVolume(vol);
@@ -423,6 +438,9 @@ function App() {
             onSeek={seek} onVolumeChange={changeVolume} onToggleShuffle={toggleShuffle}
             onToggleEqualizer={() => setCurrentView('equalizer')}
             getVisualizerData={getVisualizerData} visualizerStyle={visualizerStyle}
+            onProgress={(state) => currentTrack?.source === 'youtube' && setCurrentTime(state.playedSeconds)}
+            onDuration={(dur) => currentTrack?.source === 'youtube' && setDuration(dur)}
+            playerRef={playerRef}
           />
         </div>
 

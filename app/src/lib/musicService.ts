@@ -84,5 +84,34 @@ export const MusicService = {
       console.error('Track search failed:', e);
       return [];
     }
+  },
+
+  /**
+   * Search for tracks on YouTube via Invidious public API
+   */
+  searchYouTube: async (query: string): Promise<Track[]> => {
+    try {
+      const term = encodeURIComponent(query);
+      // Using a public Invidious instance (inv.tux.pizza is reliable)
+      const response = await fetch(`https://inv.tux.pizza/api/v1/search?q=${term}&type=video`);
+      const data = await response.json();
+      
+      return (data || [])
+        .filter((item: any) => item.type === 'video')
+        .map((video: any) => ({
+          id: video.videoId,
+          title: video.title,
+          artist: video.author,
+          album: 'YouTube',
+          duration: video.lengthSeconds,
+          url: `https://www.youtube.com/watch?v=${video.videoId}`,
+          cover: video.videoThumbnails?.[0]?.url || '',
+          isOnline: true,
+          source: 'youtube'
+        }));
+    } catch (e) {
+      console.error('YouTube search failed:', e);
+      return [];
+    }
   }
 };
