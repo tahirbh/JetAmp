@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Loader2, Music, ExternalLink, Library } from 'lucide-react';
+import { Search, Loader2, Music, Library } from 'lucide-react';
 import { MusicService } from '@/lib/musicService';
 import type { Album } from '@/lib/musicService';
 import type { Track } from '@/types';
