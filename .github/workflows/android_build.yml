@@ -32,17 +32,28 @@ jobs:
         working-directory: app
         run: npm run build
 
-      - name: Capacitor Sync
-        working-directory: app
+      - name: Verify Project Structure
         run: |
-          echo "Syncing..."
-          npx cap sync android --verbose > sync_log.txt 2>&1 || (cat sync_log.txt && exit 1)
+          echo "Checking root directory:"
+          ls -F
+          echo "Checking app directory:"
+          ls -F app
+          echo "Checking dist directory:"
+          ls -F app/dist || echo "DIST NOT FOUND"
+
+      - name: Capacitor Copy (Web Assets)
+        working-directory: app
+        run: npx cap copy android
+
+      - name: Capacitor Update (Native Plugins)
+        working-directory: app
+        run: npx cap update android
 
       - name: Build APK with Gradle
         working-directory: app/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
