@@ -9,11 +9,12 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
 interface DiscoveryHubProps {
+  currentTrack: Track | null;
   onLoadAlbum: (tracks: Track[]) => void;
   onPlayTrack: (track: Track) => void;
 }
 
-export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
+export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<'album' | 'track'>('album');
   const [loading, setLoading] = useState(false);
@@ -142,35 +143,47 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
                 // Track List
                 tracks.length > 0 ? (
                   <div className="space-y-1">
-                    {tracks.map((track, idx) => (
-                      <div 
-                        key={track.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 group relative cursor-pointer border border-transparent hover:border-white/5"
-                        onClick={() => onPlayTrack(track)}
-                      >
-                        <div className="relative w-10 h-10 flex-shrink-0 overflow-hidden rounded">
-                          <img src={track.cover} className="w-full h-full object-cover" alt="" />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Music className="w-4 h-4 text-white" />
+                    {tracks.map((track, idx) => {
+                      const isCurrent = currentTrack?.url === track.url || (currentTrack?.title === track.title && currentTrack?.artist === track.artist);
+                      return (
+                        <div 
+                          key={track.id}
+                          className={`flex items-center gap-3 p-2 rounded-lg transition-all group relative cursor-pointer border ${
+                            isCurrent 
+                              ? 'bg-blue-500/10 border-blue-500/30' 
+                              : 'hover:bg-white/5 border-transparent hover:border-white/5'
+                          }`}
+                          onClick={() => onPlayTrack(track)}
+                        >
+                          <div className="relative w-10 h-10 flex-shrink-0 overflow-hidden rounded">
+                            <img src={track.cover} className="w-full h-full object-cover" alt="" />
+                            <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isCurrent ? 'bg-blue-500/40 opacity-100' : 'bg-black/40 opacity-0 group-hover:opacity-100'}`}>
+                              <Music className={`w-4 h-4 text-white ${isCurrent ? 'animate-bounce' : ''}`} />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium truncate ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</div>
+                            <div className="text-[10px] text-white/40 truncate">{track.artist} • {track.album}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             {track.duration > 0 && (
+                               <span className="text-[10px] font-mono text-white/30">{Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')}</span>
+                             )}
+                             <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className={`w-8 h-8 ${isCurrent ? 'opacity-100 text-blue-400' : 'opacity-0 group-hover:opacity-100 text-white/40'} hover:text-blue-400`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onLoadAlbum([track]);
+                              }}
+                            >
+                              <Library className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate group-hover:text-blue-100">{track.title}</div>
-                          <div className="text-[10px] text-white/40 truncate">{track.artist} • {track.album}</div>
-                        </div>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="w-8 h-8 opacity-0 group-hover:opacity-100 hover:text-blue-400"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onLoadAlbum([track]);
-                          }}
-                        >
-                          <Library className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
@@ -209,22 +222,35 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
               {/* Tracks */}
               <div className="space-y-1">
                 <h4 className="text-[10px] font-bold uppercase text-white/40 mb-3 tracking-widest px-2">Tracklist</h4>
-                {albumTracks.map((track, idx) => (
-                  <div 
-                    key={idx}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 group relative cursor-pointer border border-transparent hover:border-white/5"
-                    onClick={() => onPlayTrack(track)}
-                  >
-                    <div className="w-6 text-[10px] text-white/30 font-mono text-center group-hover:hidden">{idx + 1}</div>
-                    <Music className="w-4 h-4 text-blue-400 hidden group-hover:block" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate group-hover:text-blue-100">{track.title}</div>
-                      <div className="text-[10px] text-white/40 truncate flex items-center gap-1">
-                        <ExternalLink className="w-2 h-2" /> {selectedAlbum.source === 'itunes' ? 'Apple Music' : 'Deezer'} Preview
+                {albumTracks.map((track, idx) => {
+                  const isCurrent = currentTrack?.url === track.url || (currentTrack?.title === track.title && currentTrack?.artist === track.artist);
+                  return (
+                    <div 
+                      key={idx}
+                      className={`flex items-center gap-3 p-2 rounded-lg transition-all group relative cursor-pointer border ${
+                        isCurrent 
+                          ? 'bg-blue-500/10 border-blue-500/30' 
+                          : 'hover:bg-white/5 border-transparent hover:border-white/5'
+                      }`}
+                      onClick={() => onPlayTrack(track)}
+                    >
+                      <div className="w-6 text-[10px] text-white/30 font-mono text-center">
+                        {isCurrent ? <Music className="w-3 h-3 text-blue-400 mx-auto animate-pulse" /> : idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-medium truncate ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</div>
+                        <div className="text-[10px] text-white/40 truncate flex items-center gap-1">
+                          {track.duration > 0 && (
+                            <span className="flex items-center gap-1 opacity-60">
+                              {Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')} •
+                            </span>
+                          )}
+                          <ExternalLink className="w-2 h-2" /> iTunes Preview
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

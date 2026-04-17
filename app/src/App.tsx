@@ -161,16 +161,27 @@ function App() {
     }
   }, [volume]);
 
-  const setupAudioGraph = useCallback((audio: HTMLAudioElement) => {
-    if (!audioContextRef.current || !analyserRef.current || filters.length === 0) return;
+  // Setup/Maintenance of Audio Graph
+  useEffect(() => {
+    if (!audioContextRef.current || !audioElementRef.current || filters.length === 0) return;
     
-    if (sourceNodeRef.current) {
-      try { sourceNodeRef.current.disconnect(); } catch (e) {}
+    // Ensure Source Node exists (ONE TIME)
+    if (!sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioElementRef.current);
+      } catch (e) {
+        console.error('Failed to create source node:', e);
+      }
     }
     
-    sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audio);
-    sourceNodeRef.current.connect(filters[0]);
-  }, [filters]);
+    // Ensure connection to current filter chain
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.disconnect();
+        sourceNodeRef.current.connect(filters[0]);
+      } catch (e) {}
+    }
+  }, [filters]); // Run when filters are initialized or changed
 
   // Stable Playback Callbacks
   const loadTrack = useCallback(async (track: Track) => {
@@ -180,30 +191,45 @@ function App() {
       const audio = new Audio();
       audio.crossOrigin = 'anonymous';
       audioElementRef.current = audio;
-      setupAudioGraph(audio);
+      
+      // Manual trigger for source node creation if needed
+      if (audioContextRef.current && !sourceNodeRef.current) {
+         sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audio);
+         sourceNodeRef.current.connect(filters[0] || audioContextRef.current.destination);
+      }
     }
 
     const audio = audioElementRef.current;
+    if (!audio) return;
+
     audio.pause();
     
     if (!track.url) return;
 
+    // Reset state before load
     setCurrentTime(0);
-    setDuration(0);
+    setDuration(track.duration || 0);
+    
     audio.src = track.url;
     audio.load();
 
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
     audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
-    audio.onloadedmetadata = () => setDuration(audio.duration);
+    audio.onloadedmetadata = () => {
+      setDuration(audio.duration);
+      // Update the track info if it had no duration
+      if (!track.duration) {
+        track.duration = audio.duration;
+      }
+    };
     audio.onended = () => {
       setIsPlaying(false);
       playNext();
     };
 
     setCurrentTrack(track);
-  }, [initAudio, setupAudioGraph]);
+  }, [initAudio, filters]); // removed setupAudioGraph
 
   const play = useCallback(async () => {
     if (audioContextRef.current?.state === 'suspended') {
@@ -402,6 +428,7 @@ function App() {
                  <CarPlaylist tracks={playlist} currentTrack={currentTrack} onSelectTrack={(t) => { loadTrack(t); play(); }} onRemoveTrack={removeTrack} />
               ) : (
                  <DiscoveryHub 
+                   currentTrack={currentTrack}
                    onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
                    onPlayTrack={(t) => { setPlaylist(prev => [t, ...prev]); loadTrack(t); play(); }} 
                  />
