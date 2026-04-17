@@ -210,9 +210,13 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
                     })}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 px-6">
                     <Music className="w-16 h-16 mb-4 stroke-[1]" />
-                    <p className="text-sm">Search for any song name<br/>to discover individual tracks.</p>
+                    <p className="text-sm">
+                      {searchSource === 'youtube' 
+                        ? "Search for any YouTube song... \n(If no results appear, servers might be under high load)" 
+                        : "Search for any song name\nto discover individual tracks."}
+                    </p>
                   </div>
                 )
               )}

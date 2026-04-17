@@ -87,59 +87,20 @@ export const MusicService = {
   },
 
   /**
-   * Search for tracks on YouTube via rotating Invidious public API instances
+   * Search for tracks on YouTube via our own serverless proxy (bypasses CORS)
    */
   searchYouTube: async (query: string): Promise<Track[]> => {
-    // List of healthy instances (rotating fallbacks)
-    const YOUTUBE_INSTANCES = [
-      'https://invidious.nerdvpn.de',
-      'https://inv.nadeko.net',
-      'https://yt.artemislena.eu',
-      'https://vid.konst.fish',
-      'https://invidious.perennialte.ch'
-    ];
-
-    const term = encodeURIComponent(query);
-    
-    for (const instance of YOUTUBE_INSTANCES) {
-      try {
-        console.log(`Searching YouTube on: ${instance}`);
-        
-        // Use a shorter timeout per instance to rotate quickly if one is slow
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-        const response = await fetch(`${instance}/api/v1/search?q=${term}&type=video`, {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) throw new Error(`Status: ${response.status}`);
-        
-        const data = await response.json();
-        if (!data || !Array.isArray(data)) throw new Error('Invalid data format');
-
-        return data
-          .filter((item: any) => item.type === 'video')
-          .map((video: any) => ({
-            id: video.videoId,
-            title: video.title,
-            artist: video.author,
-            album: 'YouTube',
-            duration: video.lengthSeconds,
-            url: `https://www.youtube.com/watch?v=${video.videoId}`,
-            cover: video.videoThumbnails?.[0]?.url || '',
-            isOnline: true,
-            source: 'youtube'
-          }));
-      } catch (e: any) {
-        console.warn(`YouTube search failed on ${instance}: ${e.message}. Trying next...`);
-        // Continue to next instance
-      }
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`/api/yt-search?q=${term}`);
+      
+      if (!response.ok) throw new Error(`Proxy error: ${response.status}`);
+      
+      const data = await response.json();
+      return data;
+    } catch (e: any) {
+      console.error('YouTube Proxy Search failed:', e.message);
+      return [];
     }
-
-    console.error('All YouTube search instances failed.');
-    return [];
   }
 };
