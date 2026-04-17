@@ -142,7 +142,7 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
                 // Track List
                 tracks.length > 0 ? (
                   <div className="space-y-1">
-                    {tracks.map((track, idx) => {
+                    {tracks.map((track) => {
                       const isCurrent = currentTrack?.url === track.url || (currentTrack?.title === track.title && currentTrack?.artist === track.artist);
                       return (
                         <div 
