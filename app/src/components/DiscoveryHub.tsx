@@ -5,7 +5,6 @@ import type { Album } from '@/lib/musicService';
 import type { Track } from '@/types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
 interface DiscoveryHubProps {
