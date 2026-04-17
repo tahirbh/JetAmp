@@ -93,7 +93,7 @@ export function TopMenu({
 
         <MenubarMenu>
           <MenubarTrigger className="data-[state=open]:bg-[var(--metal-dark)] text-gray-300 hover:text-white transition-colors cursor-pointer px-4">
-            Audio
+            CD MP3
           </MenubarTrigger>
           <MenubarContent className="bg-[var(--bg-card)] border-[var(--metal-dark)] text-gray-300 shadow-2xl">
             <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">

@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Globe, ListMusic } from 'lucide-react';
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
+import { AuthService } from '@/lib/authService';
 
 // Parse metadata from audio files
 const parseAudioMetadata = async (file: File): Promise<Partial<Track>> => {
@@ -91,8 +92,17 @@ function App() {
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
 
-  // Load from localStorage
+  // Load from localStorage & Handle OAuth Callback
   useEffect(() => {
+    // Check for OAuth callback in URL hash
+    if (window.location.hash) {
+      const user = AuthService.handleCallback();
+      if (user) {
+        AuthService.saveUser(user);
+        window.location.hash = ''; // Clear hash
+      }
+    }
+
     const saved = localStorage.getItem('car-audio-library');
     if (saved) {
       try {
@@ -434,7 +444,7 @@ function App() {
                   <ListMusic className="w-3 h-3" /> Playlist
                 </TabsTrigger>
                 <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 transition-all font-bold">
-                  <Globe className="w-3 h-3" /> Discovery
+                  <Globe className="w-3 h-3" /> DVD
                 </TabsTrigger>
               </TabsList>
             </div>

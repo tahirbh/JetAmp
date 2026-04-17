@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Search, Loader2, Music, Library } from 'lucide-react';
 import { MusicService } from '@/lib/musicService';
+import { YouTubeService } from '@/lib/youtubeService';
 import type { Album } from '@/lib/musicService';
 import type { Track } from '@/types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
+import { AuthService } from '@/lib/authService';
+import type { UserProfile } from '@/lib/authService';
+import { useEffect } from 'react';
+import { LogIn } from 'lucide-react';
 
 interface DiscoveryHubProps {
   currentTrack: Track | null;
@@ -14,6 +19,7 @@ interface DiscoveryHubProps {
 }
 
 export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
+  const [user] = useState<UserProfile | null>(AuthService.getUser());
   const [query, setQuery] = useState('');
   const [searchMode, setSearchMode] = useState<'album' | 'track'>('album');
   const [loading, setLoading] = useState(false);
@@ -22,17 +28,39 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTracks, setAlbumTracks] = useState<Track[]>([]);
 
+  // Load user playlists on mount
+  useEffect(() => {
+    if (user) {
+      const loadInitial = async () => {
+        setLoading(true);
+        const pts = await YouTubeService.fetchMyPlaylists();
+        setAlbums(pts.map(p => ({
+          id: p.id,
+          title: p.title,
+          artist: 'My Playlist',
+          cover: p.thumbnails?.high?.url || p.thumbnails?.default?.url || '',
+          source: 'youtube'
+        })));
+        setLoading(false);
+      };
+      loadInitial();
+    }
+  }, [user]);
+
   const handleSearch = async () => {
     if (!query) return;
     setLoading(true);
     setSelectedAlbum(null);
     
     if (searchMode === 'album') {
+      // For YouTube, "album" search is basically searching for playlists/channels
+      // But let's stick to Audius for global discovery if the user wants, or just YouTube Search
       const results = await MusicService.searchAlbums(query);
       setAlbums(results);
       setTracks([]);
     } else {
-      const results = await MusicService.searchTracks(query);
+      // Search tracks on YouTube
+      const results = await YouTubeService.searchTracks(query);
       setTracks(results);
       setAlbums([]);
     }
@@ -42,10 +70,35 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
   const handleSelectAlbum = async (album: Album) => {
     setSelectedAlbum(album);
     setLoading(true);
-    const tracks = await MusicService.getAlbumTracks(album.id);
+    let tracks: Track[] = [];
+    if (album.source === 'youtube') {
+      tracks = await YouTubeService.fetchPlaylistTracks(album.id);
+    } else {
+      tracks = await MusicService.getAlbumTracks(album.id);
+    }
     setAlbumTracks(tracks);
     setLoading(false);
   };
+
+  if (!user) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-black/40 backdrop-blur-xl p-8 text-center space-y-6">
+        <div className="p-6 bg-blue-500/10 rounded-full border border-blue-500/20 animate-pulse">
+           <Music className="w-12 h-12 text-blue-400" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">YouTube Music</h2>
+          <p className="text-sm text-gray-400 max-w-[200px]">Sign in to access your personal library and playlists.</p>
+        </div>
+        <Button 
+          onClick={() => AuthService.login()}
+          className="bg-white text-black hover:bg-gray-200 flex items-center gap-3 px-8 h-12 rounded-full font-bold transition-all active:scale-95"
+        >
+          <LogIn size={18} /> Login with Google
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-black/40 backdrop-blur-xl border-l border-[var(--metal-dark)]/30 text-white overflow-hidden">
@@ -56,8 +109,8 @@ export function DiscoveryHub({ currentTrack, onLoadAlbum, onPlayTrack }: Discove
             <Search className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-blue-50">Content Hub</h2>
-            <p className="text-xs text-blue-300/60 font-medium">Browse Global Music</p>
+            <h2 className="text-lg font-bold tracking-tight text-blue-50">YouTube Music</h2>
+            <p className="text-xs text-blue-300/60 font-medium">Your Personal Library</p>
           </div>
         </div>
 

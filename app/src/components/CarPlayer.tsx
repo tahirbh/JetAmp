@@ -4,6 +4,7 @@ import {
   Shuffle, Volume2
 } from 'lucide-react';
 import { RotatingCD } from './RotatingCD';
+import { YouTubePlayer } from './YouTubePlayer';
 import { AuraVisualizer } from './AuraVisualizer';
 import type { Track } from '@/types';
 
@@ -56,16 +57,24 @@ export function CarPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // REACTIVE BASS CALCULATION
+  // REACTIVE BASS CALCULATION & SIMULATED SPECTRUM
   useEffect(() => {
     const update = () => {
-      if (getVisualizerData && isPlaying) {
-        const data = getVisualizerData();
-        if (data?.frequencies) {
-          // Average the first 8 bins for bass intensity
-          let sum = 0;
-          for (let i = 0; i < 8; i++) sum += data.frequencies[i] || 0;
-          setBassLevel(sum / (8 * 255));
+      const isYouTube = currentTrack?.source === 'youtube';
+      
+      if (isPlaying) {
+        if (!isYouTube && getVisualizerData) {
+          const data = getVisualizerData();
+          if (data?.frequencies) {
+            let sum = 0;
+            for (let i = 0; i < 8; i++) sum += data.frequencies[i] || 0;
+            setBassLevel(sum / (8 * 255));
+          }
+        } else if (isYouTube) {
+          // Simulated bass/beat detection for YouTube
+          const time = Date.now() / 1000;
+          const simulatedBass = (Math.sin(time * 8) * 0.5 + 0.5) * 0.4; // 120bpm-ish pulse
+          setBassLevel(simulatedBass);
         }
       } else {
         setBassLevel(0);
@@ -74,7 +83,24 @@ export function CarPlayer({
     };
     frameRef.current = requestAnimationFrame(update);
     return () => { if (frameRef.current) cancelAnimationFrame(frameRef.current); };
-  }, [getVisualizerData, isPlaying]);
+  }, [getVisualizerData, isPlaying, currentTrack]);
+
+  // Enhanced visualizer data source
+  const getCombinedVisualizerData = () => {
+    const isYouTube = currentTrack?.source === 'youtube';
+    if (isYouTube) {
+      // Return simulated frequency data
+      const frequencies = new Uint8Array(256);
+      const waveform = new Uint8Array(256);
+      const time = Date.now() / 100;
+      for (let i = 0; i < 256; i++) {
+        frequencies[i] = (Math.sin(time + i * 0.1) * 0.5 + 0.5) * 150 * (1 - i/256);
+        waveform[i] = 128 + Math.sin(time * 2 + i * 0.05) * 50;
+      }
+      return { frequencies, waveform };
+    }
+    return getVisualizerData();
+  };
 
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden">
@@ -84,7 +110,7 @@ export function CarPlayer({
         <div className="h-16 sm:h-20 lg:h-32 relative">
           <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
           <AuraVisualizer
-            getVisualizerData={getVisualizerData}
+            getVisualizerData={getCombinedVisualizerData}
             isPlaying={isPlaying}
             barCount={24}
             mode={visualizerStyle}
@@ -99,14 +125,18 @@ export function CarPlayer({
         {/* Layered Content Container - Shifted down with mt-6 */}
         <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[340px] aspect-square mt-6">
           
-          {/* Layer 1: Rotating CD (Behind) */}
+          {/* Layer 1: Rotating CD or YouTube Player */}
           <div className="z-10 w-full h-full flex items-center justify-center">
-            <RotatingCD
-              coverUrl={currentTrack?.cover}
-              isPlaying={isPlaying}
-              size={undefined} 
-              bassLevel={bassLevel}
-            />
+            {currentTrack?.source === 'youtube' ? (
+              <YouTubePlayer videoId={currentTrack.path || ''} isPlaying={isPlaying} />
+            ) : (
+              <RotatingCD
+                coverUrl={currentTrack?.cover}
+                isPlaying={isPlaying}
+                size={undefined} 
+                bassLevel={bassLevel}
+              />
+            )}
           </div>
 
           {/* Layer 2: Track Info Overlay (Front & Centered) */}
@@ -184,10 +214,10 @@ export function CarPlayer({
 
           <button
             onClick={onToggleEqualizer}
-            className="glow-btn p-3 rounded-full text-[var(--glow-cyan)] relative group overflow-hidden"
+            className={`glow-btn p-3 rounded-full text-[var(--glow-cyan)] relative group overflow-hidden ${currentTrack?.source === 'youtube' ? 'opacity-30 grayscale pointer-events-none' : ''}`}
           >
              <div className="text-[10px] font-black group-hover:scale-110 transition-transform">EQ</div>
-             <div className="absolute inset-0 bg-[var(--glow-cyan)]/10 animate-pulse" />
+             {currentTrack?.source !== 'youtube' && <div className="absolute inset-0 bg-[var(--glow-cyan)]/10 animate-pulse" />}
           </button>
         </div>
 
