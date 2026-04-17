@@ -26,9 +26,9 @@ interface TopMenuProps {
   onPrev: () => void;
   onNext: () => void;
   onShowHelp: () => void;
-  onSetVisualizerStyle: (style: 'sanyo' | 'oscilloscope') => void;
+  onSetVisualizerStyle: (style: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
   isPlaying: boolean;
-  currentStyle: 'sanyo' | 'oscilloscope';
+  currentStyle: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow';
 }
 
 export function TopMenu({
@@ -106,15 +106,27 @@ export function TopMenu({
               <MenubarSubContent className="bg-[var(--bg-card)] border-[var(--metal-dark)]">
                 <MenubarItem 
                   onClick={() => onSetVisualizerStyle('sanyo')}
-                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'sanyo' ? 'text-[var(--glow-cyan)] font-bold' : ''}`}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'sanyo' ? 'text-green-400 font-bold' : ''}`}
                 >
-                  Sanyo Spectrum {currentStyle === 'sanyo' && '✓'}
+                  Classic Spectrum (Green) {currentStyle === 'sanyo' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('gunmetal')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'gunmetal' ? 'text-white font-bold' : ''}`}
+                >
+                  Pro Analyzer (Grey) {currentStyle === 'gunmetal' && '✓'}
                 </MenubarItem>
                 <MenubarItem 
                   onClick={() => onSetVisualizerStyle('oscilloscope')}
-                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'oscilloscope' ? 'text-[var(--glow-cyan)] font-bold' : ''}`}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'oscilloscope' ? 'text-cyan-400 font-bold' : ''}`}
                 >
                   Digital Oscilloscope {currentStyle === 'oscilloscope' && '✓'}
+                </MenubarItem>
+                <MenubarItem 
+                  onClick={() => onSetVisualizerStyle('rainbow')}
+                  className={`flex items-center justify-between focus:bg-[var(--glow-cyan)]/10 ${currentStyle === 'rainbow' ? 'text-purple-400 font-bold' : ''}`}
+                >
+                  Aura Rainbow {currentStyle === 'rainbow' && '✓'}
                 </MenubarItem>
               </MenubarSubContent>
             </MenubarSub>

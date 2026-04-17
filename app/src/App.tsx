@@ -88,7 +88,7 @@ function App() {
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
-  const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'oscilloscope'>('sanyo');
+  const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
 
   // Load from localStorage

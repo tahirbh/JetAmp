@@ -4,7 +4,7 @@ interface AuraVisualizerProps {
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
   isPlaying: boolean;
   barCount?: number;
-  mode?: 'sanyo' | 'oscilloscope';
+  mode?: 'sanyo' | 'oscilloscope' | 'gunmetal' | 'rainbow';
 }
 
 const STACK_SEGMENTS = 12;
@@ -20,20 +20,30 @@ export function AuraVisualizer({
   const animationRef = useRef<number | null>(null);
   const smoothedDataRef = useRef<number[]>(new Array(64).fill(0));
 
-  const getSegmentColor = (segmentIndex: number, totalSegments: number): { color: string; glow: string } => {
+  const getSegmentColor = (segmentIndex: number, totalSegments: number, visualizerMode: string): { color: string; glow: string } => {
     const ratio = segmentIndex / totalSegments;
-    // Dark Grey / Gunmetal range
-    if (ratio < 0.6) {
-      const lightness = 20 + ratio * 20; // 20% to 32%
-      return { color: `hsl(230, 10%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.1)' };
+    
+    if (visualizerMode === 'gunmetal') {
+       if (ratio < 0.6) {
+         const lightness = 20 + ratio * 20; 
+         return { color: `hsl(230, 10%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.1)' };
+       }
+       if (ratio < 0.85) {
+         const lightness = 40 + (ratio - 0.6) * 40;
+         return { color: `hsl(230, 5%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.2)' };
+       }
+       return { color: '#991111', glow: '#660000' };
     }
-    // Mid Grey
-    if (ratio < 0.85) {
-      const lightness = 40 + (ratio - 0.6) * 40; // 40% to 50%
-      return { color: `hsl(230, 5%, ${lightness}%)`, glow: 'rgba(255, 255, 255, 0.2)' };
+
+    if (visualizerMode === 'rainbow') {
+       const hue = (segmentIndex / totalSegments) * 360;
+       return { color: `hsl(${hue}, 80%, 50%)`, glow: `hsla(${hue}, 80%, 50%, 0.5)` };
     }
-    // Deep Red Peak (keep for realism but darker)
-    return { color: '#991111', glow: '#660000' };
+
+    // Default Sanyo Rainbow (Green -> Yellow -> Red)
+    if (ratio < 0.6) return { color: '#22c55e', glow: 'rgba(34, 197, 94, 0.4)' }; // Green
+    if (ratio < 0.85) return { color: '#eab308', glow: 'rgba(234, 179, 8, 0.4)' }; // Yellow
+    return { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.4)' }; // Red
   };
 
   const draw = useCallback(() => {
@@ -45,12 +55,11 @@ export function AuraVisualizer({
     const { width, height } = canvas;
     const data = getVisualizerData();
 
-    // Deep space clear
+    // Clear background
     ctx.fillStyle = '#020204';
     ctx.fillRect(0, 0, width, height);
 
-    if (mode === 'sanyo') {
-      // SANYO SPECTRUM BARS
+    if (mode === 'sanyo' || mode === 'gunmetal' || mode === 'rainbow') {
       const frequencies = data?.frequencies;
       const paddingX = 10;
       const availableWidth = width - paddingX * 2;
@@ -76,50 +85,46 @@ export function AuraVisualizer({
         
         for (let s = 0; s < STACK_SEGMENTS; s++) {
           const segmentY = height - 10 - (s + 1) * (segmentHeight + GAP_SIZE);
-          const { color, glow } = getSegmentColor(s, STACK_SEGMENTS);
+          const { color, glow } = getSegmentColor(s, STACK_SEGMENTS, mode);
           if (s < segmentsToShow) {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = s < segmentsToShow - 1 ? 0 : 15; // Only glow the top segment
             ctx.shadowColor = glow;
             ctx.fillStyle = color;
             ctx.fillRect(x, segmentY, barWidth, segmentHeight);
           } else {
-            ctx.fillStyle = 'rgba(40, 40, 50, 0.3)';
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(40, 40, 50, 0.15)';
             ctx.fillRect(x, segmentY, barWidth, segmentHeight);
           }
         }
       }
     } else {
-      // DIGITAL OSCILLOSCOPE (AURORA WAVE)
+      // DIGITAL OSCILLOSCOPE
       const waveform = data?.waveform;
       if (!waveform) return;
 
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#00d4ff';
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#00d4ff';
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#00f2ff';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00f2ff';
       ctx.beginPath();
 
-      const sliceWidth = width / waveform.length;
+      const sliceWidth = width / (waveform.length / 2); // Show only half for clarity
       let x = 0;
 
-      for (let i = 0; i < waveform.length; i++) {
+      for (let i = 0; i < waveform.length / 2; i++) {
         const v = waveform[i] / 128.0;
         const y = (v * height) / 2;
-
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-
         x += sliceWidth;
       }
-
       ctx.stroke();
 
-      // Add a subtle scanline effect
+      // Scanline effect
       ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(0, 255, 255, 0.05)';
-      for(let i = 0; i < height; i += 4) {
-        ctx.fillRect(0, i, width, 1);
-      }
+      ctx.fillStyle = 'rgba(0, 242, 255, 0.03)';
+      for(let i = 0; i < height; i += 4) ctx.fillRect(0, i, width, 1);
     }
   }, [getVisualizerData, isPlaying, barCount, mode]);
 
@@ -136,7 +141,7 @@ export function AuraVisualizer({
     <div className="relative w-full h-full spectrum-container overflow-hidden rounded-xl border border-white/5">
       <canvas ref={canvasRef} width={640} height={180} className="w-full h-full" style={{ imageRendering: 'crisp-edges' }} />
       <div className="absolute top-2 left-4 text-[10px] text-[var(--glow-cyan)]/60 font-black tracking-[0.4em] uppercase">
-        {mode === 'sanyo' ? 'Signal Spectrum' : 'Aura Oscilloscope'}
+        {mode === 'sanyo' ? 'Signal Spectrum' : mode === 'gunmetal' ? 'Pro Analyzer' : mode === 'rainbow' ? 'Dynamic Rainbow' : 'Aura Oscilloscope'}
       </div>
     </div>
   );
