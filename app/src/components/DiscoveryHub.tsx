@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Loader2, Music, ExternalLink, Library } from 'lucide-react';
-import { MusicService, Album } from '@/lib/musicService';
-import { Track } from '@/types';
+import { MusicService } from '@/lib/musicService';
+import type { Album } from '@/lib/musicService';
+import type { Track } from '@/types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
@@ -71,7 +72,7 @@ export function DiscoveryHub({ onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 custom-scrollbar">
         <div className="p-4">
           {!selectedAlbum ? (
             <>

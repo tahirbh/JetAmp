@@ -374,6 +374,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }
 
+/* Custom Visible Scrollbar for Discovery Hub */
+.custom-scrollbar [data-slot="scroll-area-scrollbar"] {
+  background: rgba(255, 255, 255, 0.03);
+  width: 8px !important;
+  opacity: 1 !important;
+}
+
+.custom-scrollbar [data-slot="scroll-area-thumb"] {
+  background: var(--glow-cyan) !important;
+  opacity: 0.6 !important;
+  box-shadow: 0 0 8px var(--glow-cyan);
+}
+
 /* ===== PULSE ANIMATION ===== */
 @keyframes pulse-glow {
   0%, 100% { 

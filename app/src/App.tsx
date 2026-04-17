@@ -519,7 +519,7 @@ function App() {
                 <div className="h-full animate-in slide-in-from-right duration-300">
                   <DiscoveryHub 
                     onLoadAlbum={(tracks) => {
-                      setPlaylist(prev => [...tracks, ...prev]);
+                      setPlaylist(tracks); // Clear previous and set new
                       setRightPanelTab('playlist');
                     }}
                     onPlayTrack={(track) => {
