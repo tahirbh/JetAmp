@@ -208,19 +208,22 @@ function App() {
 
     // Reset state before load
     setCurrentTime(0);
+    audio.currentTime = 0; // Hardware reset
     setDuration(track.duration || 0);
     
-    audio.src = track.url;
+    audio.src = track.url || '';
     audio.load();
 
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
     audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
     audio.onloadedmetadata = () => {
-      setDuration(audio.duration);
-      // Update the track info if it had no duration
-      if (!track.duration) {
-        track.duration = audio.duration;
+      if (isFinite(audio.duration)) {
+        setDuration(audio.duration);
+        // Update the track info if it had no duration
+        if (!track.duration) {
+          track.duration = audio.duration;
+        }
       }
     };
     audio.onended = () => {
@@ -229,7 +232,20 @@ function App() {
     };
 
     setCurrentTrack(track);
-  }, [initAudio, filters]); // removed setupAudioGraph
+  }, [initAudio, filters]); 
+
+  // Helper to find track in playlist (robust matching)
+  const findTrackIndex = useCallback((track: Track | null) => {
+    if (!track || playlist.length === 0) return -1;
+    // Match by ID
+    const idxById = playlist.findIndex(t => t.id === track.id);
+    if (idxById !== -1) return idxById;
+    // Match by URL
+    const idxByUrl = playlist.findIndex(t => t.url === track.url);
+    if (idxByUrl !== -1) return idxByUrl;
+    // Match by Title + Artist
+    return playlist.findIndex(t => t.title === track.title && t.artist === track.artist);
+  }, [playlist]);
 
   const play = useCallback(async () => {
     if (audioContextRef.current?.state === 'suspended') {
@@ -283,22 +299,22 @@ function App() {
 
   const playNext = useCallback(async () => {
     if (playlist.length === 0) return;
-    const currentIdx = currentTrack ? playlist.findIndex(t => t.id === currentTrack.id) : -1;
+    const currentIdx = findTrackIndex(currentTrack);
     let nextIdx = (currentIdx + 1) % playlist.length;
     if (shuffleMode) nextIdx = Math.floor(Math.random() * playlist.length);
     
     if (loadTrackRef.current) await loadTrackRef.current(playlist[nextIdx]);
     if (playRef.current) await playRef.current();
-  }, [currentTrack, playlist, shuffleMode]);
+  }, [currentTrack, playlist, shuffleMode, findTrackIndex]);
 
   const playPrev = useCallback(async () => {
     if (playlist.length === 0) return;
-    const currentIdx = currentTrack ? playlist.findIndex(t => t.id === currentTrack.id) : 0;
-    const prevIdx = currentIdx <= 0 ? playlist.length - 1 : currentIdx - 1;
+    const currentIdx = findTrackIndex(currentTrack);
+    const prevIdx = (currentIdx <= 0) ? playlist.length - 1 : currentIdx - 1;
     
     if (loadTrackRef.current) await loadTrackRef.current(playlist[prevIdx]);
     if (playRef.current) await playRef.current();
-  }, [currentTrack, playlist]);
+  }, [currentTrack, playlist, findTrackIndex]);
 
   const toggleShuffle = useCallback(() => setShuffleMode(prev => !prev), []);
 
@@ -430,7 +446,14 @@ function App() {
                  <DiscoveryHub 
                    currentTrack={currentTrack}
                    onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
-                   onPlayTrack={(t) => { setPlaylist(prev => [t, ...prev]); loadTrack(t); play(); }} 
+                   onPlayTrack={(t) => {
+                     const existingIdx = findTrackIndex(t);
+                     if (existingIdx === -1) {
+                       setPlaylist(prev => [t, ...prev]);
+                     }
+                     loadTrack(t);
+                     play();
+                   }} 
                  />
               )}
             </div>

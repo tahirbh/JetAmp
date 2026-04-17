@@ -128,15 +128,20 @@ export function CarPlayer({
         
         {/* Progress Bar Container - Ultra Tight */}
         <div className="w-full max-w-lg self-center px-4 flex-shrink-0 mt-0.5 mb-0.5">
-          <div className="flex items-center justify-between text-[7px] sm:text-[10px] font-mono text-gray-400 scale-75 sm:scale-90">
+          <div className="flex items-center justify-between text-[7px] sm:text-[10px] font-mono text-gray-400 scale-75 sm:scale-90 relative">
             <span>{formatTime(currentTime)}</span>
+            {(duration > 28 && duration < 32) && (
+              <span className="absolute left-1/2 -translate-x-1/2 text-[6px] sm:text-[8px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30 font-bold tracking-widest animate-pulse">
+                30s PREVIEW
+              </span>
+            )}
             <span>{formatTime(duration)}</span>
           </div>
           <input
             type="range"
             min="0"
-            max={duration || 100}
-            step="1"
+            max={duration || 0.01}
+            step="0.1"
             value={currentTime}
             onChange={(e) => onSeek(parseFloat(e.target.value))}
             className="w-full aura-slider h-6 my-1"
