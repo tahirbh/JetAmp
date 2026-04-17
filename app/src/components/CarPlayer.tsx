@@ -88,24 +88,22 @@ export function CarPlayer({
   }, [getVisualizerData, isPlaying]);
 
   return (
-    <div className={`grid ${isCinemaMode ? 'grid-rows-1' : 'grid-rows-[auto_1fr_auto]'} h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden transition-all duration-700`}>
+    <div className={`grid ${isCinemaMode ? 'grid-rows-[auto_1fr]' : 'grid-rows-[auto_1fr_auto]'} h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden transition-all duration-700`}>
       
-      {/* 1. TOP ROW: Fixed Spectrum Analyzer (HIDDEN IN CINEMA) */}
-      {!isCinemaMode && (
-        <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden">
-          <div className="h-16 sm:h-20 lg:h-32 relative">
-            <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
-            <AuraVisualizer
-              getVisualizerData={getVisualizerData}
-              isPlaying={isPlaying}
-              barCount={24}
-              mode={visualizerStyle}
-              isSimulated={currentTrack?.source === 'youtube'}
-            />
-            <div className="absolute bottom-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
-          </div>
+      {/* 1. TOP ROW: Fixed Spectrum Analyzer (ALWAYS VISIBLE OR DASH MODE) */}
+      <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden">
+        <div className="h-16 sm:h-20 lg:h-32 relative">
+          <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
+          <AuraVisualizer
+            getVisualizerData={getVisualizerData}
+            isPlaying={isPlaying}
+            barCount={24}
+            mode={visualizerStyle}
+            isSimulated={currentTrack?.source === 'youtube'}
+          />
+          <div className="absolute bottom-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
         </div>
-      )}
+      </div>
 
       {/* 2. MIDDLE ROW: Content Area */}
       <div className={`w-full flex items-center justify-center px-4 mb-2 min-h-0 relative ${!isCinemaMode ? '-mt-2' : ''}`}>
