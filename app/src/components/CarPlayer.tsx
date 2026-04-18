@@ -128,7 +128,7 @@ export function CarPlayer({
       <div className="w-full flex items-center justify-center px-4 -mt-2 mb-2 min-h-0 relative">
         
         {/* Layered Content Container - Shifted down with mt-6 */}
-        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[340px] aspect-square mt-6">
+        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-w-[340px] max-h-[340px] aspect-square mt-6 mx-auto">
           
           {/* Layer 1: Rotating CD or YouTube Player */}
           <div className="z-10 w-full h-full flex flex-col items-center justify-center">

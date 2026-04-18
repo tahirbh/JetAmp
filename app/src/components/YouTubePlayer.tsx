@@ -28,7 +28,7 @@ export function YouTubePlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const [apiReady, setApiReady] = useState(false);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const progressInterval = useRef<any>(null);
 
   // Load YouTube API
   useEffect(() => {
