@@ -128,8 +128,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
              </Button>
           </div>
         </div>
+      </div>
 
-        <div className="flex gap-2 mb-4 landscape:mb-2 landscape:pt-2">
+      <div className="p-4 pt-0 landscape:pt-2 border-b border-white/5 bg-gradient-to-r from-blue-900/5 to-purple-900/5">
+        <div className="flex gap-2 mb-4 landscape:mb-2">
           <Button 
             size="sm"
             variant={searchMode === 'album' ? 'default' : 'outline'}
