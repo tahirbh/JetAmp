@@ -117,8 +117,8 @@ export function CarPlayer({
         }
       `}</style>
       
-      {/* 1. TOP ROW: Fixed Spectrum Analyzer (HIDDEN IN LANDSCAPE) */}
-      <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden landscape-hide">
+      {/* 1. TOP ROW: Fixed Spectrum Analyzer (HIDDEN IN LANDSCAPE FOR YT) */}
+      <div className={`w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden ${currentTrack?.source === 'youtube' ? 'landscape-hide' : ''}`}>
         <div className="h-16 sm:h-20 lg:h-32 relative">
           <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
           <AuraVisualizer
@@ -135,10 +135,10 @@ export function CarPlayer({
       <div className="w-full flex items-center justify-center px-4 -mt-2 mb-2 min-h-0 relative">
         
         {/* Layered Content Container - Shifted down with mt-6 */}
-        <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-w-[340px] max-h-[340px] aspect-square mt-6 mx-auto landscape-full-height">
+        <div className={`relative rotating-cd-container w-full h-full flex items-center justify-center max-w-[340px] max-h-[340px] aspect-square mt-6 mx-auto ${currentTrack?.source === 'youtube' ? 'landscape-full-height' : ''}`}>
           
           {/* Layer 1: Rotating CD or YouTube Player */}
-          <div className="z-10 w-full h-full flex flex-col items-center justify-center landscape-full-height">
+          <div className={`z-10 w-full h-full flex flex-col items-center justify-center ${currentTrack?.source === 'youtube' ? 'landscape-full-height' : ''}`}>
             {currentTrack?.source === 'youtube' && (
               <div className="w-full text-center mb-4 animate-in fade-in slide-in-from-top duration-700 landscape-hide">
                 <h2 className="text-sm sm:text-lg lg:text-2xl font-black rainbow-text truncate px-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] uppercase">
@@ -185,8 +185,8 @@ export function CarPlayer({
           )}
         </div>
 
-        {/* BOTTOM LANDSCAPE SPECTRUM: Small height, low opacity, visible only in landscape */}
-        <div className="absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none hidden landscape-bottom-spectrum">
+        {/* BOTTOM LANDSCAPE SPECTRUM: Small height, low opacity, visible only in landscape for YouTube */}
+        <div className={`absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none hidden ${currentTrack?.source === 'youtube' ? 'landscape-bottom-spectrum' : ''}`}>
            <AuraVisualizer
               getVisualizerData={getCombinedVisualizerData}
               isPlaying={isPlaying}
@@ -197,7 +197,7 @@ export function CarPlayer({
       </div>
 
       {/* 3. BOTTOM ROW: Ultra-Transparent Transport Controls (HIDDEN IN LANDSCAPE FOR YT) */}
-      <div className={`flex flex-col bg-transparent backdrop-blur-none -mx-4 px-4 pb-2 z-20 relative -mt-8 landscape-hide`}>
+      <div className={`flex flex-col bg-transparent backdrop-blur-none -mx-4 px-4 pb-2 z-20 relative -mt-8 ${currentTrack?.source === 'youtube' ? 'landscape-hide' : ''}`}>
         
         {/* Progress Bar Container - Ultra Tight */}
         <div className="w-full max-w-lg self-center px-4 flex-shrink-0 mt-0.5 mb-0.5">
