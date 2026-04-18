@@ -114,19 +114,26 @@ function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setPlaylist(parsed.map((t: Track) => ({ ...t, url: '' })));
+        // URLs for local files expire, but YouTube/Online URLs should be kept
+        setPlaylist(parsed.map((t: Track) => ({ 
+          ...t, 
+          url: t.source === 'local' ? '' : t.url 
+        })));
       } catch (e) {}
     }
+
   }, []);
 
   // Save to localStorage
   useEffect(() => {
     if (playlist.length > 0) {
       localStorage.setItem('car-audio-library', JSON.stringify(playlist.map(t => ({
-        ...t, url: '' 
+        ...t, 
+        url: t.source === 'local' ? '' : t.url 
       }))));
     }
   }, [playlist]);
+
 
   // Audio Engine Core
   const initAudio = useCallback(() => {
@@ -342,26 +349,78 @@ function App() {
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
     pause();
-    const newTracks: Track[] = [];
-    for (const file of files) {
+    
+    // Filter for common audio extensions
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.webm'];
+    const audioFiles = files.filter(f => 
+      audioExtensions.some(ext => f.name.toLowerCase().endsWith(ext))
+    );
+
+    if (audioFiles.length === 0) return;
+
+    // 1. Initial Quick Load (Basic Info)
+    const initialTracks: Track[] = audioFiles.map(file => {
       const { title, artist } = parseFilename(file.name);
-      const metadata = await parseAudioMetadata(file);
-      const cover = await fetchAlbumArt(artist, title);
-      newTracks.push({
+      return {
         id: generateId(),
-        title, artist, album: 'Unknown Album',
-        duration: metadata.duration || 0,
-        url: URL.createObjectURL(file),
+        title,
+        artist,
+        album: 'Unknown Album',
+        duration: 0,
+        url: URL.createObjectURL(file), // This matches standard browser behavior
         path: file.name,
-        cover: cover || undefined
-      });
-    }
-    setPlaylist(newTracks);
-    if (newTracks.length > 0) {
-      await loadTrack(newTracks[0]);
+        source: 'local'
+      };
+    });
+
+    setPlaylist(initialTracks);
+    
+    // Auto-play first track if nothing is playing
+    if (initialTracks.length > 0) {
+      await loadTrack(initialTracks[0]);
       play();
     }
+
+    // 2. Background Enrichment (Metadata & Artwork) in batches
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < initialTracks.length; i += BATCH_SIZE) {
+      const batch = audioFiles.slice(i, i + BATCH_SIZE);
+      const enrichmentResults = await Promise.all(batch.map(async (file, idx) => {
+        const globalIdx = i + idx;
+        const { title, artist } = initialTracks[globalIdx];
+        
+        try {
+          const metadata = await parseAudioMetadata(file);
+          // Only fetch artwork if batch is small or user might care (e.g. first 20 tracks)
+          const cover = globalIdx < 20 ? await fetchAlbumArt(artist, title) : null;
+          
+          return {
+            index: globalIdx,
+            duration: metadata.duration || 0,
+            cover: cover || undefined
+          };
+        } catch (e) {
+          return null;
+        }
+      }));
+
+      // Update state with enriched data for this batch
+      setPlaylist(prev => {
+        const next = [...prev];
+        enrichmentResults.forEach(res => {
+          if (res) {
+            next[res.index] = {
+              ...next[res.index],
+              duration: res.duration,
+              cover: res.cover
+            };
+          }
+        });
+        return next;
+      });
+    }
   }, [loadTrack, play, pause]);
+
 
   const handleURLSubmit = useCallback(async (url: string) => {
     const isYT = url.includes('youtube.com') || url.includes('youtu.be');
@@ -478,7 +537,14 @@ function App() {
                  <DiscoveryHub 
                    user={user}
                    currentTrack={currentTrack}
-                   onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
+                   onLoadAlbum={async (tracks) => { 
+                     setPlaylist(tracks); 
+                     setRightPanelTab('playlist');
+                     if (tracks.length > 0) {
+                       await loadTrack(tracks[0]);
+                       play();
+                     }
+                   }} 
                    onPlayTrack={(t) => {
                      const existingIdx = findTrackIndex(t);
                      if (existingIdx === -1) {

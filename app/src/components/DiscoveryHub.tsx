@@ -9,7 +9,8 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { AuthService } from '@/lib/authService';
 import type { UserProfile } from '@/lib/authService';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 import { LogIn } from 'lucide-react';
 
 interface DiscoveryHubProps {
@@ -205,7 +206,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           </div>
           <Button 
-            onClick={handleSearch} 
+            onClick={() => handleSearch()} 
             disabled={loading}
             className="clay-btn btn-short px-4 transition-all active:scale-95"
           >
@@ -282,7 +283,20 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
               ) : (
                 // Track List
                 tracks.length > 0 ? (
-                  <div className={searchMode === 'video' ? "grid grid-cols-1 gap-4" : "space-y-1"}>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2 mb-2">
+                      <span className="text-[10px] font-bold uppercase text-white/40 tracking-[0.2em]">{tracks.length} Results</span>
+                      <Button 
+                        size="sm" 
+                        variant="link" 
+                        className="text-[10px] text-blue-400 font-black uppercase tracking-widest h-auto p-0 hover:text-blue-300"
+                        onClick={() => onLoadAlbum(tracks)}
+                      >
+                        + Add All to Playlist
+                      </Button>
+                    </div>
+                    <div className={searchMode === 'video' ? "grid grid-cols-1 gap-4" : "space-y-1"}>
+
                     {tracks.map((track) => {
                       const isCurrent = currentTrack?.url === track.url || (currentTrack?.title === track.title && currentTrack?.artist === track.artist);
                       
@@ -353,7 +367,8 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
                       );
                     })}
                   </div>
-                ) : (
+                </div>
+              ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                     <Music className="w-16 h-16 mb-4 stroke-[1]" />
                     <p className="text-sm">Search for any {searchMode === 'video' ? 'video' : 'song'}<br/>to start exploring.</p>

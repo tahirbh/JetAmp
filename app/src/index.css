@@ -365,6 +365,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
   padding: 0;
 }
 
+/* Tablet Scaling */
+@media (min-width: 640px) and (max-width: 1100px) and (orientation: landscape) {
+  :root {
+    font-size: 14px;
+  }
+  
+  .car-layout {
+    gap: 0.5rem;
+  }
+}
+
+
 
 /* ===== LCD DISPLAY ===== */
 .lcd-display {
@@ -611,12 +623,23 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 
-/* Hide speakers on short screens (Mobile Landscape) to prioritize Player/Playlist */
-@media (max-height: 500px) {
+/* Hide top spectrum on short screens to prioritize Player/Library */
+@media (max-height: 599px) {
   .speaker-column {
     display: none !important;
   }
+  
+  .top-spectrum-area {
+    display: none !important;
+  }
+
+  .bottom-spectrum-area {
+    display: block !important;
+    opacity: 0.6;
+    height: 40px !important;
+  }
 }
+
 
 /* ===== SMART MOBILE LANDSCAPE RULES ===== */
 @media (orientation: landscape) and (max-height: 500px) {

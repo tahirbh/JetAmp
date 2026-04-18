@@ -114,8 +114,9 @@ export function CarPlayer({
   return (
     <div className="grid grid-rows-[auto_1fr_auto] h-full w-full bg-gradient-to-b from-transparent to-[var(--bg-dark)]/40 relative overflow-hidden">
       
-      {/* 1. TOP ROW: Fixed Spectrum Analyzer (HIDDEN IN LANDSCAPE FOR YT) */}
-      <div className={`w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden ${isYouTube ? 'landscape-hide' : ''}`}>
+      {/* 1. TOP ROW: Fixed Spectrum Analyzer (Hides if height < 600px) */}
+      <div className="w-full bg-[var(--bg-dark)]/90 backdrop-blur-md border-b border-[var(--metal-dark)]/50 pt-2 pb-1 px-4 shadow-[0_5px_15px_rgba(0,0,0,0.6)] z-20 overflow-hidden top-spectrum-area">
+
         <div className="h-16 sm:h-20 lg:h-32 relative">
           <div className="absolute top-0 left-0 w-full rainbow-line-horizontal !opacity-30" />
           <AuraVisualizer
@@ -182,8 +183,8 @@ export function CarPlayer({
           )}
         </div>
 
-        {/* BOTTOM LANDSCAPE SPECTRUM: Small height, low opacity, visible only in landscape for YouTube */}
-        <div className={`absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none hidden ${isYouTube ? 'landscape-bottom-spectrum' : ''}`}>
+        {/* BOTTOM RESPONSIVE SPECTRUM: Visible only when top spectrum is hidden (height < 600px) */}
+        <div className="absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none hidden bottom-spectrum-area">
            <AuraVisualizer
               getVisualizerData={getCombinedVisualizerData}
               isPlaying={isPlaying}
@@ -191,6 +192,7 @@ export function CarPlayer({
               mode={visualizerStyle}
             />
         </div>
+
       </div>
 
       {/* 3. BOTTOM ROW: Ultra-Transparent Transport Controls (HIDDEN IN LANDSCAPE FOR YT) */}
