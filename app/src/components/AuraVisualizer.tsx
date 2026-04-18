@@ -150,7 +150,6 @@ export function AuraVisualizer({
         const x = paddingX + i * (barWidth + barGap);
         const segmentHeight = (height - 20) / (STACK_SEGMENTS + 1);
         
-        let lastPeakColor = '#ffffff';
 
         ctx.shadowBlur = 0; // Disable shadow for background segments
         for (let s = 0; s < STACK_SEGMENTS; s++) {
