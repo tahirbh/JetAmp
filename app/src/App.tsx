@@ -7,6 +7,7 @@ import { TopMenu } from '@/components/TopMenu';
 import { URLDialog } from '@/components/URLDialog';
 import { HelpPage } from '@/components/HelpPage';
 import { DiscoveryHub } from '@/components/DiscoveryHub';
+import { SettingsPage } from '@/components/SettingsPage';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Globe, ListMusic } from 'lucide-react';
 import type { Track } from '@/types';
@@ -89,10 +90,11 @@ function App() {
   const [playlist, setPlaylist] = useState<Track[]>([]);
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
+  const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
   const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
+  const [seekTime, setSeekTime] = useState<number | undefined>(undefined);
 
   // Load from localStorage & Handle OAuth Callback
   useEffect(() => {
@@ -287,11 +289,16 @@ function App() {
   }, []);
 
   const seek = useCallback((time: number) => {
-    if (audioElementRef.current) {
+    if (currentTrack?.source === 'youtube') {
+      setSeekTime(time);
+      // Reset seekTime immediately so subsequent seeks can trigger
+      setTimeout(() => setSeekTime(undefined), 100);
+      setCurrentTime(time);
+    } else if (audioElementRef.current) {
       audioElementRef.current.currentTime = time;
       setCurrentTime(time);
     }
-  }, []);
+  }, [currentTrack]);
 
   const changeVolume = useCallback((vol: number) => {
     setVolume(vol);
@@ -420,6 +427,7 @@ function App() {
         onOpenFile={handleOpenFile} onOpenFolder={handleOpenFolder} onOpenURL={() => setIsURLDialogOpen(true)}
         onPlay={play} onPause={pause} onStop={() => { pause(); seek(0); }}
         onPrev={playPrev} onNext={playNext} onShowHelp={() => setCurrentView('help')}
+        onShowSettings={() => setCurrentView('settings')}
         onSetVisualizerStyle={setVisualizerStyle} isPlaying={isPlaying} currentStyle={visualizerStyle}
       />
 
@@ -436,6 +444,11 @@ function App() {
             onSeek={seek} onVolumeChange={changeVolume} onToggleShuffle={toggleShuffle}
             onToggleEqualizer={() => setCurrentView('equalizer')}
             getVisualizerData={getVisualizerData} visualizerStyle={visualizerStyle}
+            seekTime={seekTime}
+            onYouTubeProgress={(curr, dur) => {
+              setCurrentTime(curr);
+              setDuration(dur);
+            }}
           />
         </div>
 
@@ -494,6 +507,12 @@ function App() {
       {currentView === 'help' && (
         <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
           <HelpPage onBack={() => setCurrentView('player')} />
+        </div>
+      )}
+
+      {currentView === 'settings' && (
+        <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
+          <SettingsPage onBack={() => setCurrentView('player')} />
         </div>
       )}
     </div>

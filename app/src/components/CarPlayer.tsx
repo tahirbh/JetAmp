@@ -26,6 +26,8 @@ interface CarPlayerProps {
   onToggleEqualizer: () => void;
   getVisualizerData: () => { frequencies: Uint8Array; waveform: Uint8Array } | null;
   visualizerStyle?: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
+  seekTime?: number;
+  onYouTubeProgress?: (currentTime: number, duration: number) => void;
 }
 
 export function CarPlayer({
@@ -46,6 +48,8 @@ export function CarPlayer({
   onToggleEqualizer,
   getVisualizerData,
   visualizerStyle = 'sanyo',
+  seekTime,
+  onYouTubeProgress,
 }: CarPlayerProps) {
   const [bassLevel, setBassLevel] = useState(0);
   const frameRef = useRef<number | undefined>(undefined);
@@ -71,9 +75,9 @@ export function CarPlayer({
             setBassLevel(sum / (8 * 255));
           }
         } else if (isYouTube) {
-          // Simulated bass/beat detection for YouTube
+          // Simulated bass/beat detection for YouTube - scaled by VOLUME
           const time = Date.now() / 1000;
-          const simulatedBass = (Math.sin(time * 8) * 0.5 + 0.5) * 0.4; // 120bpm-ish pulse
+          const simulatedBass = (Math.sin(time * 8) * 0.5 + 0.5) * 0.4 * volume; // Pulse scaled by volume
           setBassLevel(simulatedBass);
         }
       } else {
@@ -94,8 +98,9 @@ export function CarPlayer({
       const waveform = new Uint8Array(256);
       const time = Date.now() / 100;
       for (let i = 0; i < 256; i++) {
-        frequencies[i] = (Math.sin(time + i * 0.1) * 0.5 + 0.5) * 150 * (1 - i/256);
-        waveform[i] = 128 + Math.sin(time * 2 + i * 0.05) * 50;
+        // Frequency bars scaled by VOLUME
+        frequencies[i] = (Math.sin(time + i * 0.1) * 0.5 + 0.5) * 150 * (1 - i/256) * volume;
+        waveform[i] = 128 + Math.sin(time * 2 + i * 0.05) * 50 * volume;
       }
       return { frequencies, waveform };
     }
@@ -126,30 +131,50 @@ export function CarPlayer({
         <div className="relative rotating-cd-container w-full h-full flex items-center justify-center max-h-[340px] aspect-square mt-6">
           
           {/* Layer 1: Rotating CD or YouTube Player */}
-          <div className="z-10 w-full h-full flex items-center justify-center">
-            {currentTrack?.source === 'youtube' ? (
-              <YouTubePlayer videoId={currentTrack.path || ''} isPlaying={isPlaying} />
-            ) : (
-              <RotatingCD
-                coverUrl={currentTrack?.cover}
-                isPlaying={isPlaying}
-                size={undefined} 
-                bassLevel={bassLevel}
-              />
+          <div className="z-10 w-full h-full flex flex-col items-center justify-center">
+            {currentTrack?.source === 'youtube' && (
+              <div className="w-full text-center mb-4 animate-in fade-in slide-in-from-top duration-700">
+                <h2 className="text-sm sm:text-lg lg:text-2xl font-black rainbow-text truncate px-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] uppercase">
+                  {currentTrack?.title}
+                </h2>
+                <div className="h-[2px] w-24 mx-auto bg-gradient-to-r from-transparent via-[var(--glow-cyan)] to-transparent opacity-50 mb-2"></div>
+              </div>
             )}
-          </div>
 
-          {/* Layer 2: Track Info Overlay (Front & Centered) */}
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center pointer-events-none px-6">
-            <div className="bg-black/20 backdrop-blur-[2px] p-4 rounded-full border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-              <h2 className="text-xs sm:text-xl lg:text-3xl font-black rainbow-text truncate max-w-[200px] sm:max-w-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                {currentTrack?.title || 'No Track Selected'}
-              </h2>
-              <p className="text-[6px] sm:text-[9px] lg:text-sm text-white font-bold glow-text-white/80 truncate tracking-[0.3em] uppercase mt-1">
-                {currentTrack?.artist || 'Select a track'}
-              </p>
+            <div className="flex-1 w-full flex items-center justify-center">
+              {currentTrack?.source === 'youtube' ? (
+                <YouTubePlayer 
+                  videoId={currentTrack.path || ''} 
+                  isPlaying={isPlaying} 
+                  volume={volume}
+                  seekTime={seekTime}
+                  onProgress={onYouTubeProgress}
+                  onEnded={onNext}
+                />
+              ) : (
+                <RotatingCD
+                  coverUrl={currentTrack?.cover}
+                  isPlaying={isPlaying}
+                  size={undefined} 
+                  bassLevel={bassLevel}
+                />
+              )}
             </div>
           </div>
+
+          {/* Layer 2: Track Info Overlay (Only for non-YouTube tracks) */}
+          {currentTrack?.source !== 'youtube' && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center pointer-events-none px-6">
+              <div className="bg-black/20 backdrop-blur-[2px] p-4 rounded-full border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                <h2 className="text-xs sm:text-xl lg:text-3xl font-black rainbow-text truncate max-w-[200px] sm:max-w-xs drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                  {currentTrack?.title || 'No Track Selected'}
+                </h2>
+                <p className="text-[6px] sm:text-[9px] lg:text-sm text-white font-bold glow-text-white/80 truncate tracking-[0.3em] uppercase mt-1">
+                  {currentTrack?.artist || 'Select a track'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

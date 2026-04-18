@@ -26,6 +26,7 @@ interface TopMenuProps {
   onPrev: () => void;
   onNext: () => void;
   onShowHelp: () => void;
+  onShowSettings: () => void;
   onSetVisualizerStyle: (style: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
   isPlaying: boolean;
   currentStyle: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
@@ -41,6 +42,7 @@ export function TopMenu({
   onPrev,
   onNext,
   onShowHelp,
+  onShowSettings,
   onSetVisualizerStyle,
   isPlaying,
   currentStyle,
@@ -161,7 +163,7 @@ export function TopMenu({
               <Info size={16} /> Disco Aura Wiki & Help
             </MenubarItem>
             <MenubarSeparator className="bg-[var(--metal-dark)]" />
-            <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer opacity-50">
+            <MenubarItem onClick={onShowSettings} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer text-white">
               <Settings size={16} /> System Settings
             </MenubarItem>
           </MenubarContent>
