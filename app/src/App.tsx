@@ -91,6 +91,7 @@ function App() {
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
+  const [mobileTab, setMobileTab] = useState<'player' | 'dvd'>('player');
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
   const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
@@ -362,14 +363,16 @@ function App() {
   }, [loadTrack, play, pause]);
 
   const handleURLSubmit = useCallback(async (url: string) => {
+    const isYT = url.includes('youtube.com') || url.includes('youtu.be');
     const track: Track = {
       id: generateId(),
       title: url.split('/').pop() || 'Stream',
-      artist: 'Network',
-      album: 'Online',
+      artist: isYT ? 'YouTube' : 'Network',
+      album: isYT ? 'YouTube Stream' : 'Online',
       duration: 0,
       url: url,
       path: url,
+      source: isYT ? 'youtube' : undefined
     };
     setPlaylist(prev => [track, ...prev]);
     loadTrack(track);
@@ -431,12 +434,12 @@ function App() {
         onSetVisualizerStyle={setVisualizerStyle} isPlaying={isPlaying} currentStyle={visualizerStyle}
       />
 
-      <div className="flex-1 flex car-layout">
+      <div className="flex-1 flex car-layout overflow-hidden relative">
         <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
           <Speaker side="left" isPlaying={isPlaying} getVisualizerData={getVisualizerData} />
         </div>
 
-        <div className="w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm">
+        <div className={`w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm ${mobileTab !== 'player' ? 'hidden md:flex' : 'flex'}`}>
           <CarPlayer
             currentTrack={currentTrack} isPlaying={isPlaying} currentTime={currentTime} duration={duration}
             volume={volume} shuffleMode={shuffleMode} playlist={playlist}
@@ -452,7 +455,7 @@ function App() {
           />
         </div>
 
-        <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10">
+        <div className={`w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'}`}>
           <Tabs value={rightPanelTab} onValueChange={(val) => setRightPanelTab(val as any)} className="flex-1 flex flex-col overflow-hidden">
             <div className="p-2 border-b border-white/5 bg-black/20">
               <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">
@@ -515,6 +518,29 @@ function App() {
           <SettingsPage onBack={() => setCurrentView('player')} />
         </div>
       )}
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden flex items-center justify-around h-16 bg-[var(--bg-dark)] border-t border-white/10 px-4 z-[120] relative">
+        <button 
+          onClick={() => setMobileTab('player')}
+          className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'player' ? 'text-blue-400' : 'text-gray-500'}`}
+        >
+          <div className={`p-1.5 rounded-lg ${mobileTab === 'player' ? 'bg-blue-400/20' : ''}`}>
+             <div className="w-5 h-5 bg-current" style={{ WebkitMask: 'url("/icons/car.svg") no-repeat center', mask: 'url("/icons/car.svg") no-repeat center' }} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Player</span>
+        </button>
+
+        <button 
+          onClick={() => setMobileTab('dvd')}
+          className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'dvd' ? 'text-purple-400' : 'text-gray-500'}`}
+        >
+          <div className={`p-1.5 rounded-lg ${mobileTab === 'dvd' ? 'bg-purple-400/20' : ''}`}>
+             <Globe className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Discovery</span>
+        </button>
+      </div>
     </div>
   );
 }

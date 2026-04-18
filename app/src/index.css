@@ -580,3 +580,38 @@ input[type="range"]::-webkit-slider-thumb {
     display: none !important;
   }
 }
+
+/* ===== SMART MOBILE LANDSCAPE RULES ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-hide { 
+    display: none !important; 
+  }
+  
+  .landscape-full-height { 
+    height: 100% !important; 
+    margin-top: 0 !important; 
+    max-height: none !important; 
+    max-width: none !important;
+    aspect-ratio: auto !important;
+  }
+  
+  .landscape-bottom-spectrum { 
+    display: block !important; 
+    opacity: 0.4; 
+    height: 30px !important; 
+  }
+
+  /* Make panels fill the screen more efficiently in landscape */
+  .car-layout {
+    gap: 0 !important;
+  }
+}
+
+/* Rainbow Line Horizontal */
+.rainbow-line-horizontal {
+  height: 2px;
+  background: linear-gradient(90deg, 
+    var(--rainbow-1), var(--rainbow-2), var(--rainbow-3), 
+    var(--rainbow-4), var(--rainbow-5), var(--rainbow-6), var(--rainbow-7));
+  opacity: 0.5;
+}
