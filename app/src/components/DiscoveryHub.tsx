@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Loader2, Music, Library } from 'lucide-react';
+import { Search, Loader2, Music, Library, Disc2, Video } from 'lucide-react';
+
 import { MusicService } from '@/lib/musicService';
 import { YouTubeService } from '@/lib/youtubeService';
 import type { Album } from '@/lib/musicService';
@@ -20,67 +20,98 @@ interface DiscoveryHubProps {
 }
 
 export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
-  const [query, setQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('album');
+  const [query, setQuery] = useState('modrec');
+  const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('video');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [albums, setAlbums] = useState<Album[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumTracks, setAlbumTracks] = useState<Track[]>([]);
 
-  // Load user playlists on mount
+  const handleSearch = async (isInitial = false) => {
+    const searchQuery = isInitial ? 'modrec' : query;
+    if (!searchQuery) return;
+    
+    setLoading(true);
+    setError(null);
+    setSelectedAlbum(null);
+    
+    try {
+      if (searchMode === 'album' && !isInitial) {
+        const results = await MusicService.searchAlbums(searchQuery);
+        setAlbums(results);
+        setTracks([]);
+      } else if (searchMode === 'track') {
+        const results = await YouTubeService.searchTracks(searchQuery, 'music');
+        setTracks(results);
+        setAlbums([]);
+      } else {
+        // Default to video search
+        const results = await YouTubeService.searchTracks(searchQuery, 'video');
+        setTracks(results);
+        setAlbums([]);
+      }
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED') {
+        setError('AUTH_EXPIRED');
+      } else if (e.message === 'QUOTA_EXCEEDED') {
+        setError('QUOTA_EXCEEDED');
+      } else {
+        setError('SEARCH_FAILED');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load user playlists on mount and trigger initial search
   useEffect(() => {
     if (user) {
       const loadInitial = async () => {
         setLoading(true);
-        const pts = await YouTubeService.fetchMyPlaylists();
-        setAlbums(pts.map(p => ({
-          id: p.id,
-          title: p.title,
-          artist: 'My Playlist',
-          cover: p.thumbnails?.high?.url || p.thumbnails?.default?.url || '',
-          source: 'youtube'
-        })));
-        setLoading(false);
+        try {
+          const pts = await YouTubeService.fetchMyPlaylists();
+          setAlbums(pts.map(p => ({
+            id: p.id,
+            title: p.title,
+            artist: 'My Playlist',
+            cover: p.thumbnails?.high?.url || p.thumbnails?.default?.url || '',
+            source: 'youtube'
+          })));
+          
+          // Trigger initial search for "modrec"
+          handleSearch(true);
+        } catch (e: any) {
+          if (e.message === 'AUTH_EXPIRED') setError('AUTH_EXPIRED');
+        } finally {
+          setLoading(false);
+        }
       };
       loadInitial();
     }
   }, [user]);
 
-  const handleSearch = async () => {
-    if (!query) return;
-    setLoading(true);
-    setSelectedAlbum(null);
-    if (searchMode === 'album') {
-      const results = await MusicService.searchAlbums(query);
-      setAlbums(results);
-      setTracks([]);
-    } else if (searchMode === 'track') {
-      // Search tracks on YouTube (Music only)
-      const results = await YouTubeService.searchTracks(query, 'music');
-      setTracks(results);
-      setAlbums([]);
-    } else {
-      // Search videos on YouTube (All categories)
-      const results = await YouTubeService.searchTracks(query, 'video');
-      setTracks(results);
-      setAlbums([]);
-    }
-    setLoading(false);
-  };
-
   const handleSelectAlbum = async (album: Album) => {
     setSelectedAlbum(album);
     setLoading(true);
-    let tracks: Track[] = [];
-    if (album.source === 'youtube') {
-      tracks = await YouTubeService.fetchPlaylistTracks(album.id);
-    } else {
-      tracks = await MusicService.getAlbumTracks(album.id);
+    setError(null);
+    try {
+      let tracks: Track[] = [];
+      if (album.source === 'youtube') {
+        tracks = await YouTubeService.fetchPlaylistTracks(album.id);
+      } else {
+        tracks = await MusicService.getAlbumTracks(album.id);
+      }
+      setAlbumTracks(tracks);
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED') setError('AUTH_EXPIRED');
+    } finally {
+      setLoading(false);
     }
-    setAlbumTracks(tracks);
-    setLoading(false);
   };
+
 
   if (!user) {
     return (
@@ -136,26 +167,30 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
             size="sm"
             variant={searchMode === 'album' ? 'default' : 'outline'}
             onClick={() => setSearchMode('album')}
-            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'album' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+            className={`clay-btn btn-short ${searchMode === 'album' ? 'clay-btn-active' : ''}`}
+            title="Albums"
           >
-            Albums
+            <Disc2 className="w-5 h-5" />
           </Button>
           <Button 
             size="sm"
             variant={searchMode === 'track' ? 'default' : 'outline'}
             onClick={() => setSearchMode('track')}
-            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'track' ? 'bg-blue-600' : 'border-white/10 hover:bg-white/5'}`}
+            className={`clay-btn btn-short ${searchMode === 'track' ? 'clay-btn-active' : ''}`}
+            title="Songs"
           >
-            Songs
+            <Music className="w-5 h-5" />
           </Button>
           <Button 
             size="sm"
             variant={searchMode === 'video' ? 'default' : 'outline'}
             onClick={() => setSearchMode('video')}
-            className={`flex-1 h-8 text-[10px] uppercase font-bold tracking-widest ${searchMode === 'video' ? 'bg-blue-600 border-none' : 'border-white/10 hover:bg-white/5'}`}
+            className={`clay-btn btn-short ${searchMode === 'video' ? 'clay-btn-active' : ''}`}
+            title="Videos"
           >
-            Videos
+            <Video className="w-5 h-5" />
           </Button>
+
         </div>
 
         <div className="flex gap-2">
@@ -172,18 +207,46 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
           <Button 
             onClick={handleSearch} 
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-500 h-10 px-4 transition-all active:scale-95"
+            className="clay-btn btn-short px-4 transition-all active:scale-95"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </Button>
+
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="p-4">
-          {!selectedAlbum ? (
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+              <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
+                <Music className="w-12 h-12 text-red-400 opacity-50" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-red-200">
+                  {error === 'AUTH_EXPIRED' ? 'Session Expired' : error === 'QUOTA_EXCEEDED' ? 'Quota Exceeded' : 'Search failed'}
+                </h3>
+                <p className="text-sm text-gray-400 max-w-[250px] mx-auto">
+                  {error === 'AUTH_EXPIRED' 
+                    ? 'Your Google session has expired. Please log in again to continue searching.' 
+                    : error === 'QUOTA_EXCEEDED' 
+                    ? 'The YouTube API quota has been exceeded for today. Please try again later.' 
+                    : 'Something went wrong while searching. Please check your connection and try again.'}
+                </p>
+              </div>
+              {error === 'AUTH_EXPIRED' && (
+                <Button 
+                  onClick={() => AuthService.login()}
+                  className="bg-white text-black hover:bg-gray-200 rounded-full px-6 font-bold"
+                >
+                  Re-login with Google
+                </Button>
+              )}
+            </div>
+          ) : !selectedAlbum ? (
             <>
               {searchMode === 'album' ? (
+
                 // Album Grid
                 albums.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4">

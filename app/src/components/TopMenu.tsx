@@ -48,8 +48,9 @@ export function TopMenu({
   currentStyle,
 }: TopMenuProps) {
   return (
-    <div className="w-full bg-[var(--bg-panel)] border-b border-[var(--metal-dark)] relative z-50">
-      <Menubar className="border-none bg-transparent">
+    <div className="w-full relative z-50 glass-panel !rounded-none border-t-0 border-x-0">
+      <Menubar className="border-none bg-transparent h-10">
+
         <MenubarMenu>
           <MenubarTrigger className="data-[state=open]:bg-[var(--metal-dark)] text-gray-300 hover:text-white transition-colors cursor-pointer px-4">
             Media

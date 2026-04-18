@@ -9,7 +9,8 @@ import { HelpPage } from '@/components/HelpPage';
 import { DiscoveryHub } from '@/components/DiscoveryHub';
 import { SettingsPage } from '@/components/SettingsPage';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, ListMusic } from 'lucide-react';
+import { Disc2, ListMusic } from 'lucide-react';
+
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
 import { AuthService } from '@/lib/authService';
@@ -440,6 +441,7 @@ function App() {
         </div>
 
         <div className={`w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm ${mobileTab !== 'player' ? 'hidden md:flex' : 'flex'}`}>
+
           <CarPlayer
             currentTrack={currentTrack} isPlaying={isPlaying} currentTime={currentTime} duration={duration}
             volume={volume} shuffleMode={shuffleMode} playlist={playlist}
@@ -463,8 +465,9 @@ function App() {
                   <ListMusic className="w-3 h-3" /> Playlist
                 </TabsTrigger>
                 <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 transition-all font-bold">
-                  <Globe className="w-3 h-3" /> DVD
+                  <Disc2 className="w-3 h-3" /> DVD
                 </TabsTrigger>
+
               </TabsList>
             </div>
 
@@ -536,7 +539,7 @@ function App() {
           className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'dvd' ? 'text-purple-400' : 'text-gray-500'}`}
         >
           <div className={`p-1.5 rounded-lg ${mobileTab === 'dvd' ? 'bg-purple-400/20' : ''}`}>
-             <Globe className="w-5 h-5" />
+              <Disc2 className="w-5 h-5" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-widest">Discovery</span>
         </button>

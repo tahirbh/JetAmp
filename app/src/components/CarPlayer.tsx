@@ -219,43 +219,47 @@ export function CarPlayer({
         </div>
 
         {/* Transport Controls - COMPACT SCALING for Smartphones */}
-        <div className="flex items-center justify-center gap-1 sm:gap-4 md:gap-6 flex-shrink-0 scale-[0.55] sm:scale-[0.75] 2xl:scale-100 origin-center transition-transform duration-300 py-0 pb-1">
+        <div className="flex items-center justify-center gap-1 sm:gap-4 md:gap-6 flex-shrink-0 scale-[0.65] sm:scale-[0.85] 2xl:scale-100 origin-center transition-transform duration-300 py-0 pb-1">
           <button
             onClick={onToggleShuffle}
-            className={`glow-btn p-3 rounded-full transition-all duration-300 ${shuffleMode ? 'bg-[var(--glow-cyan)]/20 text-[var(--glow-cyan)]' : 'text-gray-400'}`}
+            className={`clay-btn btn-short p-3 rounded-xl transition-all duration-300 ${shuffleMode ? 'clay-btn-active' : ''}`}
           >
+
             <Shuffle className="w-5 h-5" />
           </button>
 
           <button
             onClick={onPrev}
-            className="glow-btn p-4 rounded-full active:scale-90"
+            className="clay-btn btn-short p-4 rounded-xl active:scale-90"
           >
+
             <SkipBack className="w-5 h-5 sm:w-6 h-6" />
           </button>
 
           <button
             onClick={isPlaying ? onPause : onPlay}
-            className="glow-btn glow-btn-play p-4 sm:p-5 rounded-full active:scale-95 group transition-all duration-300"
+            className="clay-btn p-5 sm:p-6 rounded-full active:scale-95 group transition-all duration-300 bg-gradient-to-br from-[var(--glow-green)] to-[#0088ff] text-black shadow-[0_0_30px_rgba(0,255,136,0.5)] border-none"
           >
             {isPlaying ? (
               <Pause className="w-8 h-8" />
             ) : (
-              <Play className="w-8 h-8 ml-1 group-hover:drop-shadow-[0_0_15px_white]" />
+              <Play className="w-8 h-8 translate-x-1" />
             )}
           </button>
 
           <button
             onClick={onNext}
-            className="glow-btn p-4 rounded-full active:scale-90"
+            className="clay-btn btn-short p-4 rounded-xl active:scale-90"
           >
+
             <SkipForward className="w-5 h-5 sm:w-6 h-6" />
           </button>
 
           <button
             onClick={onToggleEqualizer}
-            className={`glow-btn p-3 rounded-full text-[var(--glow-cyan)] relative group overflow-hidden ${currentTrack?.source === 'youtube' ? 'opacity-30 grayscale pointer-events-none' : ''}`}
+            className={`clay-btn btn-short p-3 rounded-xl relative group overflow-hidden ${currentTrack?.source === 'youtube' ? 'opacity-30 grayscale pointer-events-none' : ''}`}
           >
+
              <div className="text-[10px] font-black group-hover:scale-110 transition-transform">EQ</div>
              {currentTrack?.source !== 'youtube' && <div className="absolute inset-0 bg-[var(--glow-cyan)]/10 animate-pulse" />}
           </button>

@@ -23,6 +23,14 @@
     --glow-purple: #aa00ff;
     --glow-pink: #ff10f0;
 
+    /* Claymorphism Tokens */
+    --clay-bg: rgba(30, 30, 45, 0.85);
+    --clay-shadow-out: 8px 8px 16px rgba(0, 0, 0, 0.4), -4px -4px 12px rgba(255, 255, 255, 0.05);
+    --clay-shadow-in: inset 2px 2px 4px rgba(255, 255, 255, 0.1), inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+    --clay-shadow-active: inset 4px 4px 8px rgba(0, 0, 0, 0.5), inset -2px -2px 4px rgba(255, 255, 255, 0.05);
+    --clay-glow: 0 0 15px rgba(0, 212, 255, 0.3);
+
+
     /* Metallic Colors */
     --metal-gold-light: #f6e27a;
     --metal-gold-mid: #cb9b51;
@@ -320,14 +328,43 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* ===== PANEL STYLES ===== */
 .glass-panel {
-  background: linear-gradient(180deg, rgba(26, 26, 37, 0.95) 0%, rgba(18, 18, 26, 0.98) 100%);
-  border: 1px solid var(--metal-mid);
-  border-radius: 12px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(0, 212, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
+
+.clay-btn {
+  background: var(--clay-bg);
+  box-shadow: var(--clay-shadow-out), var(--clay-shadow-in);
+  border: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+}
+
+.clay-btn:hover {
+  transform: translateY(-2px);
+  color: white;
+  box-shadow: 8px 12px 20px rgba(0, 0, 0, 0.5), -4px -4px 12px rgba(255, 255, 255, 0.08), var(--clay-glow);
+}
+
+.clay-btn:active, .clay-btn-active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--clay-shadow-active);
+  color: var(--glow-cyan);
+}
+
+.btn-short {
+  min-width: 44px;
+  width: auto;
+  aspect-ratio: 1/1;
+  padding: 0;
+}
+
 
 /* ===== LCD DISPLAY ===== */
 .lcd-display {

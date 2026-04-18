@@ -73,17 +73,33 @@ export const YouTubeService = {
 
   searchTracks: async (query: string, type: 'music' | 'video' = 'music'): Promise<Track[]> => {
     const user = AuthService.getUser();
-    if (!user || !user.token) return [];
+    if (!user || !user.token) {
+      console.warn('YouTube search requested without token');
+      return [];
+    }
 
     try {
       const categoryFilter = type === 'music' ? '&videoCategoryId=10' : '';
-      const response = await fetch(`${BASE_URL}/search?part=snippet&q=${encodeURIComponent(query)}&type=video${categoryFilter}&maxResults=25`, {
+      const response = await fetch(`${BASE_URL}/search?part=snippet&q=${encodeURIComponent(query)}&type=video${categoryFilter}&maxResults=30`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
       });
+      
+      if (response.status === 401) {
+        console.error('YouTube API: 401 Unauthorized - Session expired');
+        AuthService.logout(); // Clear expired token
+        throw new Error('AUTH_EXPIRED');
+      }
+
       const data = await response.json();
       
+      if (data.error) {
+        console.error('YouTube API Error:', data.error);
+        if (data.error.code === 403) throw new Error('QUOTA_EXCEEDED');
+        throw new Error(data.error.message || 'SEARCH_FAILED');
+      }
+
       return (data.items || []).map((item: any) => ({
         id: generateId(),
         title: item.snippet.title,
@@ -96,9 +112,11 @@ export const YouTubeService = {
         isOnline: true,
         source: 'youtube'
       }));
-    } catch (e) {
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED' || e.message === 'QUOTA_EXCEEDED') throw e;
       console.error('YouTube search failed:', e);
       return [];
     }
   }
+
 };
