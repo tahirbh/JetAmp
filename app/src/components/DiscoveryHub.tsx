@@ -104,8 +104,8 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
 
   return (
     <div className="h-full flex flex-col bg-black/40 backdrop-blur-xl border-l border-[var(--metal-dark)]/30 text-white overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-white/5 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
+      {/* Header (HIDDEN IN LANDSCAPE) */}
+      <div className="p-4 border-b border-white/5 bg-gradient-to-r from-blue-900/20 to-purple-900/20 landscape:hidden">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
             <Search className="w-5 h-5 text-blue-400" />
@@ -129,7 +129,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 landscape:mb-2 landscape:pt-2">
           <Button 
             size="sm"
             variant={searchMode === 'album' ? 'default' : 'outline'}

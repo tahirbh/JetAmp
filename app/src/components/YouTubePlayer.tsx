@@ -13,6 +13,7 @@ interface YouTubePlayerProps {
   isPlaying: boolean;
   volume: number;
   seekTime?: number;
+  showNativeControls?: boolean;
   onProgress?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
 }
@@ -22,6 +23,7 @@ export function YouTubePlayer({
   isPlaying, 
   volume, 
   seekTime,
+  showNativeControls = false,
   onProgress,
   onEnded 
 }: YouTubePlayerProps) {
@@ -59,7 +61,7 @@ export function YouTubePlayer({
       videoId: videoId,
       playerVars: {
         autoplay: 1,
-        controls: 0,
+        controls: showNativeControls ? 1 : 0,
         modestbranding: 1,
         rel: 0,
         showinfo: 0,
@@ -140,9 +142,9 @@ export function YouTubePlayer({
 
   return (
     <div className="w-full h-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/5 relative">
-      <div ref={containerRef} className="w-full h-full pointer-events-none"></div>
+      <div ref={containerRef} className={`w-full h-full ${showNativeControls ? '' : 'pointer-events-none'}`}></div>
       {/* Overlay to catch clicks and avoid YouTube redirection */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 to-transparent"></div>
+      <div className={`absolute inset-0 pointer-events-none ${showNativeControls ? 'opacity-0' : 'bg-gradient-to-t from-black/20 to-transparent'}`}></div>
     </div>
   );
 }
