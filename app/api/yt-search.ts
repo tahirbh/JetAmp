@@ -26,131 +26,126 @@ export default async function handler(req: Request) {
     });
   }
 
-  const YOUTUBE_INSTANCES = [
-    'https://invidious.projectsegfau.lt',
-    'https://iv.ggtyler.dev',
-    'https://invidious.lunar.icu',
-    'https://invidious.snopyta.org',
-    'https://invidious.privacydev.net'
-  ];
-
-  const PIPED_INSTANCES = [
-    'https://pipedapi.kavin.rocks',
-    'https://piped-api.lunar.icu',
-    'https://api-piped.mha.fi'
-  ];
-
   const term = encodeURIComponent(query);
   
-  // LAYER 1: Invidious Proxy
-  for (const instance of YOUTUBE_INSTANCES) {
-    try {
-      const response = await fetchWithTimeout(`${instance}/api/v1/search?q=${term}&type=video`);
-      if (!response.ok) continue;
-      
-      const data = await response.json();
-      if (!data || !Array.isArray(data) || data.length === 0) continue;
-
-      const filtered = data
-        .filter((item: any) => item.type === 'video')
-        .map((video: any) => ({
-          id: video.videoId,
-          title: video.title,
-          artist: video.author,
-          album: 'YouTube',
-          duration: video.lengthSeconds,
-          url: `https://www.youtube.com/watch?v=${video.videoId}`,
-          cover: video.videoThumbnails?.find((t: any) => t.quality === 'high')?.url || video.videoThumbnails?.[0]?.url || '',
-          isOnline: true,
-          source: 'youtube'
-        }));
-
-      if (filtered.length > 0) {
-        return new Response(JSON.stringify(filtered), {
-          status: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 's-maxage=3600, stale-while-revalidate'
-          },
-        });
-      }
-    } catch (e) {
-      continue;
-    }
-  }
-
-  // LAYER 2: Piped API Proxy
-  for (const instance of PIPED_INSTANCES) {
-    try {
-      const response = await fetchWithTimeout(`${instance}/search?q=${term}&filter=videos`);
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      if (!data || !data.items || !Array.isArray(data.items) || data.items.length === 0) continue;
-
-      const filtered = data.items
-        .filter((item: any) => item.type === 'video')
-        .map((video: any) => ({
-          id: video.url.split('v=')[1] || video.url.split('/').pop(),
-          title: video.title,
-          artist: video.uploaderName,
-          album: 'YouTube',
-          duration: video.duration,
-          url: `https://www.youtube.com/watch?v=${video.url.split('v=')[1] || video.url.split('/').pop()}`,
-          cover: video.thumbnail,
-          isOnline: true,
-          source: 'youtube'
-        }));
-
-      if (filtered.length > 0) {
-        return new Response(JSON.stringify(filtered), {
-          status: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 's-maxage=3600, stale-while-revalidate'
-          },
-        });
-      }
-    } catch (e) {
-      continue;
-    }
-  }
-
-  // LAYER 3: iTunes Backup (The "Safety Net")
   try {
-    const response = await fetchWithTimeout(`https://itunes.apple.com/search?term=${term}&entity=song&limit=15`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        const filtered = data.results.map((item: any) => ({
-          id: `itunes-${item.trackId}`,
-          title: item.trackName,
-          artist: item.artistName,
-          album: item.collectionName || 'YouTube (Match)',
-          duration: Math.floor(item.trackTimeMillis / 1000),
-          // Construct a search-redirect URL for YouTube
-          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.artistName} ${item.trackName}`)}`,
-          cover: item.artworkUrl100.replace('100x100bb', '600x600bb'),
-          isOnline: true,
-          source: 'youtube'
-        }));
+    // 1. Fetch the raw YouTube results page (Video filter)
+    const ytUrl = `https://www.youtube.com/results?search_query=${term}&sp=EgIQAQ%253D%253D`;
+    const response = await fetchWithTimeout(ytUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Cache-Control': 'no-cache'
+      }
+    }, 6000);
 
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+
+    // 2. Extract ytInitialData
+    const dataRegex = /var ytInitialData = ({.*?});<\/script>/s;
+    const match = html.match(dataRegex);
+    let ytData;
+    
+    if (match) {
+      ytData = JSON.parse(match[1]);
+    } else {
+      const altMatch = html.match(/>window\["ytInitialData"\] = ({.*?});<\/script>/s);
+      if (!altMatch) throw new Error('Data segment not found');
+      ytData = JSON.parse(altMatch[1]);
+    }
+
+    const sectionList = ytData.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
+    const itemSection = sectionList?.find((s: any) => s.itemSectionRenderer)?.itemSectionRenderer?.contents;
+
+    if (itemSection && itemSection.length > 0) {
+      const filtered = itemSection
+        .map((item: any) => {
+          const video = item.videoRenderer;
+          if (!video) return null;
+
+          const videoId = video.videoId;
+          return {
+            id: videoId,
+            title: video.title?.runs?.[0]?.text || 'Untitled Video',
+            artist: video.ownerText?.runs?.[0]?.text || 'YouTube',
+            album: 'YouTube',
+            duration: video.lengthText?.simpleText || '0:00',
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            cover: video.thumbnail?.thumbnails?.sort((a: any, b: any) => b.width - a.width)[0]?.url || 
+                   `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+            isOnline: true,
+            source: 'youtube'
+          };
+        })
+        .filter(Boolean);
+
+      if (filtered.length > 0) {
         return new Response(JSON.stringify(filtered), {
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 's-maxage=86400'
+            'Cache-Control': 's-maxage=3600, stale-while-revalidate'
           },
         });
       }
     }
-  } catch (e) {}
+    throw new Error('No items found in section');
 
-  return new Response(JSON.stringify([]), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-  });
+  } catch (err: any) {
+    console.error('Direct Scrape failed:', err.message);
+
+    // LAYER 2: Highly stable Piped/Invidious Fallback
+    const PROXIES = [
+      `https://pipedapi.leptons.xyz/search?q=${term}&filter=videos`,
+      `https://invidious.projectsegfau.lt/api/v1/search?q=${term}&type=video`,
+    ];
+
+    for (const proxyUrl of PROXIES) {
+      try {
+        const response = await fetchWithTimeout(proxyUrl, {}, 4000);
+        if (!response.ok) continue;
+        const json: any = await response.json();
+        const items = json.items || (Array.isArray(json) ? json : []);
+        const filtered = items.map((item: any) => ({
+          id: item.videoId || item.id,
+          title: item.title,
+          artist: item.uploaderName || item.author || 'YouTube',
+          album: 'YouTube',
+          duration: item.duration || 0,
+          url: `https://www.youtube.com/watch?v=${item.videoId || item.id}`,
+          cover: item.thumbnail || `https://img.youtube.com/vi/${item.videoId || item.id}/hqdefault.jpg`,
+          isOnline: true,
+          source: 'youtube'
+        })).filter((t: any) => t.id);
+
+        if (filtered.length > 0) {
+          return new Response(JSON.stringify(filtered), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      } catch (e) { continue; }
+    }
+
+    // FINAL FALLBACK: Direct Search Card
+    const fallbackTrack = {
+      id: `yt-search:${term}`,
+      title: `Search YouTube: "${query}"`,
+      artist: 'YouTube',
+      album: 'Direct Search Fallback',
+      duration: 0,
+      url: `https://www.youtube.com/results?search_query=${term}`,
+      cover: 'https://www.youtube.com/img/desktop/yt_1200.png',
+      isOnline: true,
+      source: 'youtube'
+    };
+    
+    return new Response(JSON.stringify([fallbackTrack]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
 }
