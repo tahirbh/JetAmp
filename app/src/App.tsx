@@ -10,6 +10,8 @@ import { DiscoveryHub } from '@/components/DiscoveryHub';
 import { SettingsPage } from '@/components/SettingsPage';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Disc2, ListMusic } from 'lucide-react';
+import { SplashScreen } from '@/components/SplashScreen';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -95,6 +97,8 @@ function App() {
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
   const [mobileTab, setMobileTab] = useState<'player' | 'dvd'>('player');
+  const [showSplash, setShowSplash] = useState(true);
+  const [importStatus, setImportStatus] = useState<{ current: number; total: number; fileName: string } | null>(null);
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
   const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
@@ -369,6 +373,8 @@ function App() {
     });
 
     setPlaylist(initialTracks);
+    setImportStatus({ current: 0, total: audioFiles.length, fileName: 'Initializing...' });
+
     if (initialTracks.length > 0) {
       await loadTrack(initialTracks[0]);
       play();
@@ -377,9 +383,14 @@ function App() {
     const BATCH_SIZE = 5;
     for (let i = 0; i < initialTracks.length; i += BATCH_SIZE) {
       const batch = audioFiles.slice(i, i + BATCH_SIZE);
+      
       const enrichmentResults = await Promise.all(batch.map(async (file, idx) => {
         const globalIdx = i + idx;
         const { title, artist } = initialTracks[globalIdx];
+        
+        // Update status for each file in batch
+        setImportStatus(prev => prev ? { ...prev, current: globalIdx + 1, fileName: file.name } : null);
+
         try {
           const metadata = await parseAudioMetadata(file);
           const cover = globalIdx < 20 ? await fetchAlbumArt(artist, title) : null;
@@ -397,6 +408,9 @@ function App() {
         return next;
       });
     }
+
+    // Small delay for the progress to feel natural
+    setTimeout(() => setImportStatus(null), 800);
   }, [loadTrack, play, pause]);
 
   const handleURLSubmit = useCallback(async (url: string) => {
@@ -580,6 +594,15 @@ function App() {
           <span className="text-[10px] font-bold uppercase tracking-widest">Discovery</span>
         </button>
       </div>
+
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {importStatus && (
+        <LoadingOverlay 
+          current={importStatus.current} 
+          total={importStatus.total} 
+          fileName={importStatus.fileName} 
+        />
+      )}
     </div>
   );
 }
