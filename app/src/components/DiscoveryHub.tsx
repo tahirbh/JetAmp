@@ -196,6 +196,8 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Input
+              id="search-query"
+              name="search-query"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -247,7 +249,9 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                         className="group cursor-pointer space-y-2 hover:bg-white/5 p-2 rounded-xl transition-all border border-transparent hover:border-white/10"
                       >
                         <div className="relative aspect-square overflow-hidden rounded-lg shadow-lg">
-                          <img src={album.cover} alt={album.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+                          {album.cover && (
+                            <img src={album.cover} alt={album.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+                          )}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <Music className="w-8 h-8 text-white animate-pulse" />
                           </div>
@@ -281,26 +285,34 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                           return (
                             <div key={track.id} className={`group relative cursor-pointer overflow-hidden rounded-xl border transition-all ${isCurrent ? 'border-blue-500/50 bg-blue-500/5' : 'border-white/5 hover:border-white/20 bg-white/5'}`} onClick={() => onPlayTrack(track)}>
                               <div className="aspect-video relative overflow-hidden">
-                                <img src={track.cover} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" alt="" />
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
-                                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-[9px] font-bold text-white uppercase tracking-wider">HD</div>
-                              </div>
-                              <div className="p-3 space-y-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className={`text-xs font-bold leading-tight line-clamp-2 ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</h3>
-                                  <div className="p-1 rounded bg-white/5">
-                                     <Music className={`w-3 h-3 ${isCurrent ? 'animate-pulse text-blue-400' : 'text-white/20'}`} />
+                                {track.cover && (
+                                  <img src={track.cover} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" alt="" />
+                                )}
+                                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-[9px] font-bold text-white uppercase tracking-wider">
+                                    {track.id.startsWith('yt-search') ? 'Search' : 'HD'}
                                   </div>
                                 </div>
-                                <p className="text-[10px] text-white/40 font-medium">{track.artist}</p>
-                              </div>
+                                <div className="p-3 space-y-1">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h3 className={`text-xs font-bold leading-tight line-clamp-2 ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</h3>
+                                    <div className="p-1 rounded bg-white/5">
+                                       <Music className={`w-3 h-3 ${isCurrent ? 'animate-pulse text-blue-400' : 'text-white/20'}`} />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-white/40 font-medium">
+                                    {track.id.startsWith('yt-search') ? 'Click to search on YouTube' : track.artist}
+                                  </p>
+                                </div>
                             </div>
                           );
                         }
                         return (
                           <div key={track.id} className={`flex items-center gap-3 p-2 rounded-lg transition-all group relative cursor-pointer border ${isCurrent ? 'bg-blue-500/10 border-blue-500/30' : 'hover:bg-white/5 border-transparent hover:border-white/5'}`} onClick={() => onPlayTrack(track)}>
                             <div className="relative w-10 h-10 flex-shrink-0 overflow-hidden rounded">
-                              <img src={track.cover} className="w-full h-full object-cover" alt="" />
+                              {track.cover && (
+                                <img src={track.cover} className="w-full h-full object-cover" alt="" />
+                              )}
                               <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isCurrent ? 'bg-blue-500/40 opacity-100' : 'bg-black/40 opacity-0 group-hover:opacity-100'}`}>
                                 <Music className={`w-4 h-4 text-white ${isCurrent ? 'animate-bounce' : ''}`} />
                               </div>
@@ -334,7 +346,9 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                 ← Back to Search
               </button>
               <div className="flex gap-4 items-end">
-                <img src={selectedAlbum.cover} className="w-32 h-32 rounded-lg shadow-2xl border border-white/10" alt="" />
+                {selectedAlbum.cover && (
+                  <img src={selectedAlbum.cover} className="w-32 h-32 rounded-lg shadow-2xl border border-white/10" alt="" />
+                )}
                 <div className="flex-1 space-y-1">
                   <Badge variant="outline" className="text-[10px] uppercase tracking-widest border-blue-500/50 text-blue-400">Album</Badge>
                   <h2 className="text-xl font-bold leading-tight line-clamp-2">{selectedAlbum.title}</h2>

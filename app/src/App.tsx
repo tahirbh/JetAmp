@@ -239,8 +239,10 @@ function App() {
     audio.currentTime = 0; 
     setDuration(track.duration || 0);
     
-    audio.src = track.url || '';
-    audio.load();
+    if (track.url) {
+      audio.src = track.url;
+      audio.load();
+    }
 
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
