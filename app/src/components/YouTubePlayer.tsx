@@ -54,7 +54,8 @@ export function YouTubePlayer({
     if (!apiReady || !videoId || !containerRef.current) return;
 
     if (playerRef.current) {
-       playerRef.current.destroy();
+      playerRef.current.destroy();
+      playerRef.current = null;
     }
 
     // IDs starting with 'yt-search' are from the iTunes fallback (format: 'yt-search-{trackId}:{searchQuery}')
@@ -63,20 +64,26 @@ export function YouTubePlayer({
     // Extract the search query part (after the first colon)
     const searchQuery = isSearch ? decodeURIComponent(videoId.split(':').slice(1).join(':')) : '';
 
+    // Build playerVars without any undefined values — undefined keys confuse
+    // the YouTube IFrame API's postMessage origin handshake
+    const playerVars: Record<string, any> = {
+      autoplay: 1,
+      controls: showNativeControls ? 1 : 0,
+      modestbranding: 1,
+      rel: 0,
+      showinfo: 0,
+      iv_load_policy: 3,
+      enablejsapi: 1,
+      origin: window.location.origin,
+    };
+    if (isSearch) {
+      playerVars.listType = 'search';
+      playerVars.list = searchQuery;
+    }
+
     playerRef.current = new window.YT.Player(containerRef.current, {
       videoId: actualId,
-      playerVars: {
-        autoplay: 1,
-        listType: isSearch ? 'search' : undefined,
-        list: isSearch ? searchQuery : undefined,
-        controls: showNativeControls ? 1 : 0,
-        modestbranding: 1,
-        rel: 0,
-        showinfo: 0,
-        iv_load_policy: 3,
-        enablejsapi: 1,
-        origin: window.location.origin
-      },
+      playerVars,
       events: {
         onReady: (event: any) => {
           event.target.setVolume(volume * 100);

@@ -592,6 +592,7 @@ function App() {
                        return [t, ...prev];
                      });
                      loadTrack(t); play();
+                      setMobileTab('player'); // auto-switch to player on mobile
                    }} 
                  />
               )}
