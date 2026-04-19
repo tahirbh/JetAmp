@@ -13,7 +13,7 @@ import {
 import { 
   FileAudio, FolderOpen, Globe, Play, 
   Pause, Square, SkipBack, SkipForward,
-  Activity, Settings, Info, Music
+  Activity, Settings, Info, Music, HelpCircle
 } from 'lucide-react';
 
 interface TopMenuProps {
@@ -27,6 +27,7 @@ interface TopMenuProps {
   onNext: () => void;
   onShowHelp: () => void;
   onShowSettings: () => void;
+  onShowGuide: () => void;
   onSetVisualizerStyle: (style: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
   isPlaying: boolean;
   currentStyle: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
@@ -43,6 +44,7 @@ export function TopMenu({
   onNext,
   onShowHelp,
   onShowSettings,
+  onShowGuide,
   onSetVisualizerStyle,
   isPlaying,
   currentStyle,
@@ -162,6 +164,9 @@ export function TopMenu({
           <MenubarContent className="bg-[var(--bg-card)] border-[var(--metal-dark)] text-gray-300 shadow-2xl">
             <MenubarItem onClick={onShowHelp} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer font-bold text-white">
               <Info size={16} /> Disco Aura Wiki & Help
+            </MenubarItem>
+            <MenubarItem onClick={onShowGuide} className="flex items-center gap-2 focus:bg-blue-500/20 focus:text-blue-400 cursor-pointer font-bold ">
+              <HelpCircle size={16} /> Visual User Guide
             </MenubarItem>
             <MenubarSeparator className="bg-[var(--metal-dark)]" />
             <MenubarItem onClick={onShowSettings} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer text-white">

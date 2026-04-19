@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Disc2, ListMusic } from 'lucide-react';
 import { SplashScreen } from '@/components/SplashScreen';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { UserGuideModal } from '@/components/UserGuideModal';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -98,6 +99,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
   const [mobileTab, setMobileTab] = useState<'player' | 'dvd'>('player');
   const [showSplash, setShowSplash] = useState(true);
+  const [showUserGuide, setShowUserGuide] = useState(false);
   const [importStatus, setImportStatus] = useState<{ current: number; total: number; fileName: string } | null>(null);
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
@@ -488,6 +490,24 @@ function App() {
     return { frequencies, waveform };
   }, [currentTrack, isPlaying]);
 
+  // Auto-open User Guide on first visit
+  useEffect(() => {
+    if (!showSplash) {
+      const timer = setTimeout(() => {
+        const hasSeenGuide = localStorage.getItem('hasSeenGuide');
+        if (!hasSeenGuide) {
+          setShowUserGuide(true);
+        }
+      }, 1500); // 1.5s after splash ends
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
+
+  const handleCloseGuide = () => {
+    setShowUserGuide(false);
+    localStorage.setItem('hasSeenGuide', 'true');
+  };
+
   useEffect(() => {
     return () => {
       audioElementRef.current?.pause();
@@ -502,6 +522,7 @@ function App() {
         onPlay={play} onPause={pause} onStop={() => { pause(); seek(0); }}
         onPrev={playPrev} onNext={playNext} onShowHelp={() => setCurrentView('help')}
         onShowSettings={() => setCurrentView('settings')}
+        onShowGuide={() => setShowUserGuide(true)}
         onSetVisualizerStyle={setVisualizerStyle} isPlaying={isPlaying} currentStyle={visualizerStyle}
       />
 
@@ -603,6 +624,7 @@ function App() {
           fileName={importStatus.fileName} 
         />
       )}
+      <UserGuideModal isOpen={showUserGuide} onClose={handleCloseGuide} />
     </div>
   );
 }
