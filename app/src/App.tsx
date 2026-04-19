@@ -94,6 +94,7 @@ function App() {
   const [volume, setVolume] = useState(0.7);
   const [shuffleMode, setShuffleMode] = useState(false);
   const [playlist, setPlaylist] = useState<Track[]>([]);
+  const hasLoadedRef = useRef(false);
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
@@ -129,16 +130,22 @@ function App() {
         })));
       } catch (e) {}
     }
-
+    hasLoadedRef.current = true;
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage with safety
   useEffect(() => {
-    if (playlist.length > 0) {
-      localStorage.setItem('car-audio-library', JSON.stringify(playlist.map(t => ({
-        ...t, 
-        url: t.source === 'local' ? '' : t.url 
-      }))));
+    if (!hasLoadedRef.current) return;
+    try {
+      localStorage.setItem('car-audio-library', JSON.stringify(playlist.map(t => {
+        if (!t) return null;
+        return {
+          ...t, 
+          url: t.source === 'local' ? '' : t.url 
+        };
+      }).filter(Boolean)));
+    } catch (e) {
+      console.error('Failed to save library:', e);
     }
   }, [playlist]);
 
@@ -568,9 +575,19 @@ function App() {
                      setRightPanelTab('playlist');
                      if (tracks.length > 0) { await loadTrack(tracks[0]); play(); }
                    }} 
+                   onAddTrack={(t) => {
+                     setPlaylist(prev => {
+                       const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
+                       if (exists) return prev;
+                       return [...prev, t];
+                     });
+                   }}
                    onPlayTrack={(t) => {
-                     const existingIdx = findTrackIndex(t);
-                     if (existingIdx === -1) setPlaylist(prev => [t, ...prev]);
+                     setPlaylist(prev => {
+                       const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
+                       if (exists) return prev;
+                       return [t, ...prev];
+                     });
                      loadTrack(t); play();
                    }} 
                  />

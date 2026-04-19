@@ -643,6 +643,10 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* ===== SMART MOBILE LANDSCAPE RULES ===== */
 @media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    font-size: 13px;
+  }
+
   .landscape-hide { 
     display: none !important; 
   }
@@ -664,6 +668,11 @@ input[type="range"]::-webkit-slider-thumb {
   /* Make panels fill the screen more efficiently in landscape */
   .car-layout {
     gap: 0 !important;
+  }
+
+  .touch-target {
+    min-height: 38px;
+    min-width: 38px;
   }
 }
 

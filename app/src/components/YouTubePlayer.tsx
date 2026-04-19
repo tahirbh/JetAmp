@@ -57,10 +57,18 @@ export function YouTubePlayer({
        playerRef.current.destroy();
     }
 
+    // IDs starting with 'yt-search' are from the iTunes fallback (format: 'yt-search-{trackId}:{searchQuery}')
+    const isSearch = typeof videoId === 'string' && videoId.startsWith('yt-search');
+    const actualId = isSearch ? '' : videoId;
+    // Extract the search query part (after the first colon)
+    const searchQuery = isSearch ? decodeURIComponent(videoId.split(':').slice(1).join(':')) : '';
+
     playerRef.current = new window.YT.Player(containerRef.current, {
-      videoId: videoId,
+      videoId: actualId,
       playerVars: {
         autoplay: 1,
+        listType: isSearch ? 'search' : undefined,
+        list: isSearch ? searchQuery : undefined,
         controls: showNativeControls ? 1 : 0,
         modestbranding: 1,
         rel: 0,

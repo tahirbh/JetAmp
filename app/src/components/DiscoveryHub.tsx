@@ -14,10 +14,11 @@ interface DiscoveryHubProps {
   user: UserProfile | null;
   currentTrack: Track | null;
   onLoadAlbum: (tracks: Track[]) => void;
+  onAddTrack: (track: Track) => void;
   onPlayTrack: (track: Track) => void;
 }
 
-export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: DiscoveryHubProps) {
+export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPlayTrack }: DiscoveryHubProps) {
   const [query, setQuery] = useState('modrec');
   const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('video');
   const [loading, setLoading] = useState(false);
@@ -38,21 +39,44 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
     
     try {
       if (searchMode === 'album' && !isInitial) {
-        const results = await MusicService.searchAlbums(searchQuery);
-        setAlbums(results);
-        setTracks([]);
-      } else if (searchMode === 'track') {
-        const results = await YouTubeService.searchTracks(searchQuery, 'music');
-        setTracks(results);
-        setAlbums([]);
-      } else {
-        const results = await YouTubeService.searchTracks(searchQuery, 'video');
-        setTracks(results);
-        setAlbums([]);
+        if (!user) {
+          // If not logged in, we search Audius for playlists
+          const results = await MusicService.searchAlbums(searchQuery);
+          setAlbums(results);
+          setTracks([]);
+        } else {
+          // For now keep existing behavior for authenticated album search
+          const ytAlbums = await YouTubeService.fetchMyPlaylists();
+          setAlbums(ytAlbums.map(p => ({
+            id: p.id,
+            title: p.title,
+            artist: 'My Playlist',
+            cover: p.thumbnails?.high?.url || p.thumbnails?.default?.url || '',
+            source: 'youtube'
+          })));
+        }
+      } else if (searchMode === 'track' || searchMode === 'video') {
+        // USE FALLBACK PROXY if not logged in or for best reliability
+        if (!user || searchMode === 'video') {
+          const results = await MusicService.searchYouTube(searchQuery);
+          setTracks(results);
+          setAlbums([]);
+        } else {
+          // Use authenticated YT Music search
+          const results = await YouTubeService.searchTracks(searchQuery, 'music');
+          setTracks(results);
+          setAlbums([]);
+        }
       }
     } catch (e: any) {
       if (e.message === 'AUTH_EXPIRED') {
         setError('AUTH_EXPIRED');
+        // Auto-fallback on auth error?
+        if (searchMode !== 'album') {
+           const results = await MusicService.searchYouTube(searchQuery);
+           setTracks(results);
+           setError(null);
+        }
       } else if (e.message === 'QUOTA_EXCEEDED') {
         setError('QUOTA_EXCEEDED');
       } else {
@@ -76,6 +100,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
             cover: p.thumbnails?.high?.url || p.thumbnails?.default?.url || '',
             source: 'youtube'
           })));
+          // Also show initial trending/modrec results
           handleSearch(true);
         } catch (e: any) {
           if (e.message === 'AUTH_EXPIRED') setError('AUTH_EXPIRED');
@@ -84,6 +109,9 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
         }
       };
       loadInitial();
+    } else {
+      // Load initial modrec results even for guest
+      handleSearch(true);
     }
   }, [user]);
 
@@ -105,35 +133,6 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
       setLoading(false);
     }
   };
-
-
-  if (!user) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-black/40 backdrop-blur-xl p-8 text-center space-y-6">
-        <div className="p-6 bg-blue-500/10 rounded-full border border-blue-500/20 animate-pulse">
-           <Music className="w-12 h-12 text-blue-400" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">YouTube Music</h2>
-          <p className="text-sm text-gray-400 max-w-[200px]">Sign in to access your personal library and playlists.</p>
-        </div>
-        <Button 
-          onClick={() => AuthService.login()}
-          className="bg-black/40 backdrop-blur-xl hover:bg-white/10 text-white flex items-center gap-3 px-8 h-12 rounded-full font-bold transition-all border border-white/10 active:scale-95 shadow-xl group"
-        >
-          <div className="bg-white p-1.5 rounded-full group-hover:scale-110 transition-transform">
-            <svg width="16" height="16" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-              <path d="M3.964 10.711c-.18-.54-.282-1.117-.282-1.711s.102-1.171.282-1.711V4.957H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.043l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.483 0 2.443 2.057.957 4.957l3.007 2.332C4.672 5.164 6.656 3.58 9 3.58z" fill="#EA4335"/>
-            </svg>
-          </div>
-          Login with Google
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full flex flex-col bg-black/40 backdrop-blur-xl border-l border-[var(--metal-dark)]/30 text-white overflow-hidden">
@@ -312,7 +311,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onPlayTrack }: D
                             </div>
                             <div className="flex items-center gap-2">
                                {track.duration > 0 && <span className="text-[10px] font-mono text-white/30">{Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')}</span>}
-                               <Button size="icon" variant="ghost" className={`w-8 h-8 ${isCurrent ? 'opacity-100 text-blue-400' : 'opacity-0 group-hover:opacity-100 text-white/40'} hover:text-blue-400`} onClick={(e) => { e.stopPropagation(); onLoadAlbum([track]); }}>
+                               <Button size="icon" variant="ghost" className={`w-8 h-8 ${isCurrent ? 'opacity-100 text-blue-400' : 'opacity-0 group-hover:opacity-100 text-white/40'} hover:text-blue-400`} onClick={(e) => { e.stopPropagation(); onAddTrack(track); }}>
                                 <Library className="w-4 h-4" />
                               </Button>
                             </div>
