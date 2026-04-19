@@ -24,21 +24,34 @@ export default defineConfig({
             }
 
             const term = encodeURIComponent(query);
-            const instances = [
+
+            // --- Piped instances (return { items: [...] } with type:'video') ---
+            const pipedInstances = [
               `https://pipedapi.kavin.rocks/search?q=${term}&filter=videos`,
               `https://piped-api.lunar.icu/search?q=${term}&filter=videos`,
               `https://api.piped.privacydev.net/search?q=${term}&filter=videos`,
-              `https://pipedapi.nosecrecy.moe/search?q=${term}&filter=videos`,
-              `https://invidious.projectsegfau.lt/api/v1/search?q=${term}&type=video`,
-              `https://iv.ggtyler.dev/api/v1/search?q=${term}&type=video`,
-              `https://invidious.snopyta.org/api/v1/search?q=${term}&type=video`,
-              `https://invidious.privacydev.net/api/v1/search?q=${term}&type=video`
+              `https://piped.smnz.de/search?q=${term}&filter=videos`,
+              `https://pipedapi.nosecandy.com/search?q=${term}&filter=videos`,
+              `https://pipedapi.leptons.xyz/search?q=${term}&filter=videos`,
+              `https://piped-api.privacy.com.de/search?q=${term}&filter=videos`,
             ];
 
+            // --- Invidious instances (return plain array with videoId) ---
+            const invidiousInstances = [
+              `https://invidious.io.lol/api/v1/search?q=${term}&type=video`,
+              `https://yt.artemislena.eu/api/v1/search?q=${term}&type=video`,
+              `https://invidious.fdn.fr/api/v1/search?q=${term}&type=video`,
+              `https://invidious.projectsegfau.lt/api/v1/search?q=${term}&type=video`,
+              `https://iv.ggtyler.dev/api/v1/search?q=${term}&type=video`,
+              `https://invidious.privacydev.net/api/v1/search?q=${term}&type=video`,
+            ];
+
+            const allInstances = [...pipedInstances, ...invidiousInstances];
+
             let success = false;
-            for (const searchUrl of instances) {
+            for (const searchUrl of allInstances) {
               try {
-                const response = await fetch(searchUrl, { signal: AbortSignal.timeout(3000) });
+                const response = await fetch(searchUrl, { signal: AbortSignal.timeout(4000) });
                 if (!response.ok) continue;
                 
                 const json: any = await response.json();
@@ -50,6 +63,7 @@ export default defineConfig({
                   .filter((item: any) => item.type === 'video' || (!item.type && item.videoId))
                   .map((item: any) => {
                     const videoId = item.videoId || item.url?.split('v=')[1] || item.url?.split('/').pop();
+                    if (!videoId) return null;
                     return {
                       id: videoId,
                       title: item.title,
@@ -58,11 +72,12 @@ export default defineConfig({
                       duration: item.duration || item.lengthSeconds || 0,
                       url: `https://www.youtube.com/watch?v=${videoId}`,
                       path: videoId,
-                      cover: item.thumbnail || item.videoThumbnails?.[0]?.url || '',
+                      cover: item.thumbnail || item.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
                       isOnline: true,
                       source: 'youtube'
                     };
-                  });
+                  })
+                  .filter(Boolean);
                 
                 if (tracks.length === 0) continue;
 
@@ -76,31 +91,23 @@ export default defineConfig({
             }
 
             if (!success) {
-              // FINAL FALLBACK: iTunes API (very stable)
-              try {
-                const itunesUrl = `https://itunes.apple.com/search?term=${term}&entity=song&limit=20`;
-                const response = await fetch(itunesUrl);
-                const data: any = await response.json();
-                
-                const tracks = (data.results || []).map((item: any) => ({
-                  // Use iTunes' unique trackId to avoid duplicate key collisions
-                  id: `yt-search-${item.trackId}:${encodeURIComponent(`${item.artistName} ${item.trackName}`)}`,
-                  title: item.trackName,
-                  artist: item.artistName,
-                  album: item.collectionName || 'YouTube Match',
-                  duration: Math.floor(item.trackTimeMillis / 1000),
-                  url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.artistName} ${item.trackName}`)}`,
-                  cover: item.artworkUrl100.replace('100x100bb', '600x600bb'),
-                  isOnline: true,
-                  source: 'youtube'
-                }));
-
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(tracks));
-              } catch (e) {
-                res.statusCode = 500;
-                res.end(JSON.stringify({ error: 'All search proxies and fallbacks failed' }));
-              }
+              // FINAL FALLBACK: Return a single YouTube-search track using the
+              // user's ORIGINAL query. YouTubePlayer handles 'yt-search:*' ids
+              // via listType:'search' — searches YouTube directly, no iTunes mismatch.
+              const fallbackTrack = {
+                id: `yt-search:${term}`,
+                title: `"${query}" — YouTube Search`,
+                artist: 'YouTube',
+                album: 'YouTube Search',
+                duration: 0,
+                url: `https://www.youtube.com/results?search_query=${term}`,
+                path: `yt-search:${term}`,
+                cover: '',
+                isOnline: true,
+                source: 'youtube'
+              };
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify([fallbackTrack]));
             }
             return;
           }
