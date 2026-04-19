@@ -58,6 +58,24 @@ export function CarPlayer({
   const isYouTube = currentTrack?.source === 'youtube';
   const isCinemaMode = isYouTube && !forceDashMode;
 
+  // Extract the bare YouTube video ID from either path or url
+  const getYouTubeVideoId = (): string => {
+    const raw = currentTrack?.path || currentTrack?.url || '';
+    // Already a bare video ID (11 chars, no slashes or query params)
+    if (raw && !raw.includes('/') && !raw.includes('?')) return raw;
+    // Extract from ?v=VIDEO_ID
+    try {
+      const urlObj = new URL(raw);
+      const v = urlObj.searchParams.get('v');
+      if (v) return v;
+      // youtu.be/VIDEO_ID
+      const parts = urlObj.pathname.split('/').filter(Boolean);
+      if (parts.length > 0) return parts[parts.length - 1];
+    } catch {}
+    return raw;
+  };
+  const youtubeVideoId = isYouTube ? getYouTubeVideoId() : '';
+
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -149,7 +167,7 @@ export function CarPlayer({
               {isYouTube ? (
                 <div className="w-full h-full flex items-center justify-center bg-black">
                   <YouTubePlayer 
-                    videoId={currentTrack?.path || ''} 
+                    videoId={youtubeVideoId} 
                     isPlaying={isPlaying} 
                     volume={volume}
                     seekTime={seekTime}

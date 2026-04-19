@@ -57,6 +57,7 @@ export default defineConfig({
                       album: 'YouTube',
                       duration: item.duration || item.lengthSeconds || 0,
                       url: `https://www.youtube.com/watch?v=${videoId}`,
+                      path: videoId,
                       cover: item.thumbnail || item.videoThumbnails?.[0]?.url || '',
                       isOnline: true,
                       source: 'youtube'
