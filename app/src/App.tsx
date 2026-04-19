@@ -71,7 +71,6 @@ function App() {
   // Audio refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
-  const playerRef = useRef<any>(null); // Ref for ReactPlayer
   const simDataRef = useRef<{ frequencies: Uint8Array; waveform: Uint8Array } | null>(null);
   const simBeatRef = useRef<number>(0);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -507,7 +506,6 @@ function App() {
             getVisualizerData={getVisualizerData} visualizerStyle={visualizerStyle}
             seekTime={seekTime}
             onYouTubeProgress={(curr, dur) => { setCurrentTime(curr); setDuration(dur); }}
-            playerRef={playerRef}
           />
         </div>
 

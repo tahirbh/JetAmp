@@ -28,9 +28,6 @@ interface CarPlayerProps {
   visualizerStyle?: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
   seekTime?: number;
   onYouTubeProgress?: (currentTime: number, duration: number) => void;
-  onProgress?: (state: { playedSeconds: number }) => void;
-  onDuration?: (duration: number) => void;
-  playerRef?: React.RefObject<any>;
 }
 
 export function CarPlayer({
@@ -53,9 +50,6 @@ export function CarPlayer({
   visualizerStyle = 'sanyo',
   seekTime,
   onYouTubeProgress,
-  onProgress,
-  onDuration,
-  playerRef,
 }: CarPlayerProps) {
   const [bassLevel, setBassLevel] = useState(0);
   const [forceDashMode, setForceDashMode] = useState(false);
