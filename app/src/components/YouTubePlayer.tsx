@@ -58,7 +58,7 @@ export function YouTubePlayer({
       playerRef.current = null;
     }
 
-    // IDs starting with 'yt-search' are from the iTunes fallback (format: 'yt-search-{trackId}:{searchQuery}')
+    // IDs starting with 'yt-search' are for fallback searches (format: 'yt-search:{searchQuery}')
     const isSearch = typeof videoId === 'string' && videoId.startsWith('yt-search');
     const actualId = isSearch ? '' : videoId;
     // Extract the search query part (after the first colon)

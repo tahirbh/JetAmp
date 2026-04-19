@@ -8,7 +8,7 @@ export interface Track {
   cover?: string;
   path?: string;
   isOnline?: boolean;
-  source?: 'local' | 'itunes' | 'deezer' | 'spotify' | 'youtube' | 'audius' | 'network';
+  source?: 'local' | 'deezer' | 'spotify' | 'youtube' | 'audius' | 'network';
 }
 
 export interface Playlist {

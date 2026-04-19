@@ -60,7 +60,7 @@ export function CarPlayer({
 
   // Extract the bare YouTube video ID (or yt-search-* fallback id) for the player
   const getYouTubeVideoId = (): string => {
-    // 1. iTunes fallback: id is 'yt-search-{trackId}:{searchQuery}' — pass through as-is
+    // 1. YouTube Search fallback: id is 'yt-search:{searchQuery}' — pass through as-is
     //    YouTubePlayer handles this format with listType:'search'
     const trackId = currentTrack?.id || '';
     if (trackId.startsWith('yt-search')) return trackId;

@@ -55,20 +55,7 @@ const parseFilename = (filename: string): { title: string; artist: string } => {
   return { title: name, artist: 'Unknown Artist' };
 };
 
-// Fetch album art from iTunes Search API
-const fetchAlbumArt = async (artist: string, title: string): Promise<string | null> => {
-  try {
-    const term = `${artist} ${title}`.replace(/\s+/g, '+');
-    const response = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=1`);
-    const data = await response.json();
-    if (data.results && data.results.length > 0) {
-      return data.results[0].artworkUrl100.replace('100x100bb', '600x600bb');
-    }
-  } catch (e) {
-    console.error('Failed to fetch album art:', e);
-  }
-  return null;
-};
+
 
 function App() {
   // Audio refs
@@ -405,8 +392,7 @@ function App() {
 
         try {
           const metadata = await parseAudioMetadata(file);
-          const cover = globalIdx < 20 ? await fetchAlbumArt(artist, title) : null;
-          return { index: globalIdx, duration: metadata.duration || 0, cover: cover || undefined };
+          return { index: globalIdx, duration: metadata.duration || 0 };
         } catch (e) { return null; }
       }));
 
@@ -414,7 +400,7 @@ function App() {
         const next = [...prev];
         enrichmentResults.forEach(res => {
           if (res) {
-            next[res.index] = { ...next[res.index], duration: res.duration, cover: res.cover };
+            next[res.index] = { ...next[res.index], duration: res.duration };
           }
         });
         return next;

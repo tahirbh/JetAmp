@@ -6,7 +6,7 @@ export interface Album {
   title: string;
   artist: string;
   cover: string;
-  source: 'audius' | 'itunes' | 'deezer' | 'youtube';
+  source: 'audius' | 'deezer' | 'youtube';
 }
 
 export const MusicService = {
