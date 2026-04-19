@@ -7,10 +7,14 @@ import { TopMenu } from '@/components/TopMenu';
 import { URLDialog } from '@/components/URLDialog';
 import { HelpPage } from '@/components/HelpPage';
 import { DiscoveryHub } from '@/components/DiscoveryHub';
+import { SettingsPage } from '@/components/SettingsPage';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, ListMusic } from 'lucide-react';
+import { Disc2, ListMusic } from 'lucide-react';
+
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
+import { AuthService } from '@/lib/authService';
+import type { UserProfile } from '@/lib/authService';
 
 // Parse metadata from audio files
 const parseAudioMetadata = async (file: File): Promise<Partial<Track>> => {
@@ -90,26 +94,45 @@ function App() {
   const [playlist, setPlaylist] = useState<Track[]>([]);
   const [filters, setFilters] = useState<BiquadFilterNode[]>([]);
   const [isURLDialogOpen, setIsURLDialogOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help'>('player');
+  const [currentView, setCurrentView] = useState<'player' | 'equalizer' | 'help' | 'settings'>('player');
+  const [mobileTab, setMobileTab] = useState<'player' | 'dvd'>('player');
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
+  const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
+  const [seekTime, setSeekTime] = useState<number | undefined>(undefined);
 
-  // Load from localStorage
+  // Load from localStorage & Handle OAuth Callback
   useEffect(() => {
+    // Check for OAuth callback in URL hash
+    if (window.location.hash) {
+      const newUser = AuthService.handleCallback();
+      if (newUser) {
+        AuthService.saveUser(newUser);
+        setUser(newUser); // Update React state immediately
+        window.location.hash = ''; // Clear hash
+      }
+    }
+
     const saved = localStorage.getItem('car-audio-library');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setPlaylist(parsed.map((t: Track) => ({ ...t, url: '' })));
+        // URLs for local files expire, but YouTube/Online URLs should be kept
+        setPlaylist(parsed.map((t: Track) => ({ 
+          ...t, 
+          url: t.source === 'local' ? '' : t.url 
+        })));
       } catch (e) {}
     }
+
   }, []);
 
   // Save to localStorage
   useEffect(() => {
     if (playlist.length > 0) {
       localStorage.setItem('car-audio-library', JSON.stringify(playlist.map(t => ({
-        ...t, url: '' 
+        ...t, 
+        url: t.source === 'local' ? '' : t.url 
       }))));
     }
   }, [playlist]);
@@ -117,7 +140,7 @@ function App() {
   // Audio Engine Core
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       const context = new AudioContext();
       audioContextRef.current = context;
 
@@ -168,7 +191,6 @@ function App() {
   useEffect(() => {
     if (!audioContextRef.current || !audioElementRef.current || filters.length === 0) return;
     
-    // Ensure Source Node exists (ONE TIME)
     if (!sourceNodeRef.current) {
       try {
         sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioElementRef.current);
@@ -177,16 +199,14 @@ function App() {
       }
     }
     
-    // Ensure connection to current filter chain
     if (sourceNodeRef.current) {
       try {
         sourceNodeRef.current.disconnect();
         sourceNodeRef.current.connect(filters[0]);
       } catch (e) {}
     }
-  }, [filters]); // Run when filters are initialized or changed
+  }, [filters]);
 
-  // Stable Playback Callbacks
   const loadTrack = useCallback(async (track: Track) => {
     initAudio();
 
@@ -195,7 +215,6 @@ function App() {
       audio.crossOrigin = 'anonymous';
       audioElementRef.current = audio;
       
-      // Manual trigger for source node creation if needed
       if (audioContextRef.current && !sourceNodeRef.current) {
          sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audio);
          sourceNodeRef.current.connect(filters[0] || audioContextRef.current.destination);
@@ -207,7 +226,6 @@ function App() {
 
     audio.pause();
     
-    // If it's a YouTube track, we don't set audio.src
     if (track.source === 'youtube') {
       setCurrentTrack(track);
       setCurrentTime(0);
@@ -218,9 +236,8 @@ function App() {
     
     if (!track.url) return;
 
-    // Reset state before load
     setCurrentTime(0);
-    audio.currentTime = 0; // Hardware reset
+    audio.currentTime = 0; 
     setDuration(track.duration || 0);
     
     audio.src = track.url || '';
@@ -232,10 +249,7 @@ function App() {
     audio.onloadedmetadata = () => {
       if (isFinite(audio.duration)) {
         setDuration(audio.duration);
-        // Update the track info if it had no duration
-        if (!track.duration) {
-          track.duration = audio.duration;
-        }
+        if (!track.duration) track.duration = audio.duration;
       }
     };
     audio.onended = () => {
@@ -246,16 +260,12 @@ function App() {
     setCurrentTrack(track);
   }, [initAudio, filters]); 
 
-  // Helper to find track in playlist (robust matching)
   const findTrackIndex = useCallback((track: Track | null) => {
     if (!track || playlist.length === 0) return -1;
-    // Match by ID
     const idxById = playlist.findIndex(t => t.id === track.id);
     if (idxById !== -1) return idxById;
-    // Match by URL
     const idxByUrl = playlist.findIndex(t => t.url === track.url);
     if (idxByUrl !== -1) return idxByUrl;
-    // Match by Title + Artist
     return playlist.findIndex(t => t.title === track.title && t.artist === track.artist);
   }, [playlist]);
 
@@ -264,33 +274,39 @@ function App() {
       await audioContextRef.current.resume();
     }
     
-    if (audioElementRef.current && !audioElementRef.current.src) {
+    if (audioElementRef.current && !audioElementRef.current.src && currentTrack?.source !== 'youtube') {
        if (playlist.length > 0) await loadTrack(playlist[0]);
     }
     
-    try {
-      await audioElementRef.current?.play();
-    } catch (e) {
-      console.error('Playback failed:', e);
+    if (currentTrack?.source === 'youtube') {
+      setIsPlaying(true);
+    } else {
+      try {
+        await audioElementRef.current?.play();
+      } catch (e) {
+        console.error('Playback failed:', e);
+      }
     }
-  }, [playlist, loadTrack]);
+  }, [playlist, loadTrack, currentTrack]);
 
-  // Sync refs
   useEffect(() => {
     loadTrackRef.current = loadTrack;
     playRef.current = play;
   }, [loadTrack, play]);
 
   const pause = useCallback(() => {
-    audioElementRef.current?.pause();
-  }, []);
+    if (currentTrack?.source === 'youtube') {
+      setIsPlaying(false);
+    } else {
+      audioElementRef.current?.pause();
+    }
+  }, [currentTrack]);
 
   const seek = useCallback((time: number) => {
     if (currentTrack?.source === 'youtube') {
+      setSeekTime(time);
+      setTimeout(() => setSeekTime(undefined), 100);
       setCurrentTime(time);
-      if (playerRef.current) {
-        playerRef.current.seekTo(time, 'seconds');
-      }
     } else if (audioElementRef.current) {
       audioElementRef.current.currentTime = time;
       setCurrentTime(time);
@@ -337,36 +353,64 @@ function App() {
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
     pause();
-    const newTracks: Track[] = [];
-    for (const file of files) {
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.webm'];
+    const audioFiles = files.filter(f => audioExtensions.some(ext => f.name.toLowerCase().endsWith(ext)));
+    if (audioFiles.length === 0) return;
+
+    const initialTracks: Track[] = audioFiles.map(file => {
       const { title, artist } = parseFilename(file.name);
-      const metadata = await parseAudioMetadata(file);
-      const cover = await fetchAlbumArt(artist, title);
-      newTracks.push({
+      return {
         id: generateId(),
         title, artist, album: 'Unknown Album',
-        duration: metadata.duration || 0,
+        duration: 0,
         url: URL.createObjectURL(file),
         path: file.name,
-        cover: cover || undefined
-      });
-    }
-    setPlaylist(newTracks);
-    if (newTracks.length > 0) {
-      await loadTrack(newTracks[0]);
+        source: 'local'
+      };
+    });
+
+    setPlaylist(initialTracks);
+    if (initialTracks.length > 0) {
+      await loadTrack(initialTracks[0]);
       play();
+    }
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < initialTracks.length; i += BATCH_SIZE) {
+      const batch = audioFiles.slice(i, i + BATCH_SIZE);
+      const enrichmentResults = await Promise.all(batch.map(async (file, idx) => {
+        const globalIdx = i + idx;
+        const { title, artist } = initialTracks[globalIdx];
+        try {
+          const metadata = await parseAudioMetadata(file);
+          const cover = globalIdx < 20 ? await fetchAlbumArt(artist, title) : null;
+          return { index: globalIdx, duration: metadata.duration || 0, cover: cover || undefined };
+        } catch (e) { return null; }
+      }));
+
+      setPlaylist(prev => {
+        const next = [...prev];
+        enrichmentResults.forEach(res => {
+          if (res) {
+            next[res.index] = { ...next[res.index], duration: res.duration, cover: res.cover };
+          }
+        });
+        return next;
+      });
     }
   }, [loadTrack, play, pause]);
 
   const handleURLSubmit = useCallback(async (url: string) => {
+    const isYT = url.includes('youtube.com') || url.includes('youtu.be');
     const track: Track = {
       id: generateId(),
       title: url.split('/').pop() || 'Stream',
-      artist: 'Network',
-      album: 'Online',
+      artist: isYT ? 'YouTube' : 'Network',
+      album: isYT ? 'YouTube Stream' : 'Online',
       duration: 0,
       url: url,
       path: url,
+      source: isYT ? 'youtube' : undefined
     };
     setPlaylist(prev => [track, ...prev]);
     loadTrack(track);
@@ -403,24 +447,18 @@ function App() {
   }, [currentTrack, pause]);
 
   const getVisualizerData = useCallback(() => {
-    // If playing YouTube, generate simulated data if we haven't already or if we need an update
     if (currentTrack?.source === 'youtube' && isPlaying) {
       if (!simDataRef.current) {
         simDataRef.current = {
-          frequencies: new Uint8Array(256), // Simplified fftSize equivalent
+          frequencies: new Uint8Array(256),
           waveform: new Uint8Array(256)
         };
       }
-
       const { frequencies, waveform } = simDataRef.current;
       const time = performance.now() / 1000;
-      
-      // Update beat logic
       simBeatRef.current += 0.05;
       const beat = Math.sin(simBeatRef.current) * 0.5 + 0.5;
-      
       for (let i = 0; i < frequencies.length; i++) {
-        // Generate a vibrant "pulse" pattern
         const base = 40 + Math.sin(time * 2 + i * 0.1) * 20;
         const pulse = beat * (255 - i * 0.8) * (0.3 + Math.random() * 0.2);
         frequencies[i] = Math.min(255, base + pulse);
@@ -450,15 +488,16 @@ function App() {
         onOpenFile={handleOpenFile} onOpenFolder={handleOpenFolder} onOpenURL={() => setIsURLDialogOpen(true)}
         onPlay={play} onPause={pause} onStop={() => { pause(); seek(0); }}
         onPrev={playPrev} onNext={playNext} onShowHelp={() => setCurrentView('help')}
+        onShowSettings={() => setCurrentView('settings')}
         onSetVisualizerStyle={setVisualizerStyle} isPlaying={isPlaying} currentStyle={visualizerStyle}
       />
 
-      <div className="flex-1 flex car-layout">
+      <div className="flex-1 flex car-layout overflow-hidden relative">
         <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden border-r border-[var(--metal-dark)]/50 speaker-column">
           <Speaker side="left" isPlaying={isPlaying} getVisualizerData={getVisualizerData} />
         </div>
 
-        <div className="w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm">
+        <div className={`w-full md:flex-1 flex flex-col h-full overflow-hidden border-r border-[var(--metal-dark)] relative z-10 bg-[var(--bg-panel)]/30 backdrop-blur-sm ${mobileTab !== 'player' ? 'hidden md:flex' : 'flex'}`}>
           <CarPlayer
             currentTrack={currentTrack} isPlaying={isPlaying} currentTime={currentTime} duration={duration}
             volume={volume} shuffleMode={shuffleMode} playlist={playlist}
@@ -466,13 +505,13 @@ function App() {
             onSeek={seek} onVolumeChange={changeVolume} onToggleShuffle={toggleShuffle}
             onToggleEqualizer={() => setCurrentView('equalizer')}
             getVisualizerData={getVisualizerData} visualizerStyle={visualizerStyle}
-            onProgress={(state) => currentTrack?.source === 'youtube' && setCurrentTime(state.playedSeconds)}
-            onDuration={(dur) => currentTrack?.source === 'youtube' && setDuration(dur)}
+            seekTime={seekTime}
+            onYouTubeProgress={(curr, dur) => { setCurrentTime(curr); setDuration(dur); }}
             playerRef={playerRef}
           />
         </div>
 
-        <div className="hidden md:flex md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10">
+        <div className={`w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'}`}>
           <Tabs value={rightPanelTab} onValueChange={(val) => setRightPanelTab(val as any)} className="flex-1 flex flex-col overflow-hidden">
             <div className="p-2 border-b border-white/5 bg-black/20">
               <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">
@@ -480,25 +519,26 @@ function App() {
                   <ListMusic className="w-3 h-3" /> Playlist
                 </TabsTrigger>
                 <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 transition-all font-bold">
-                  <Globe className="w-3 h-3" /> Discovery
+                  <Disc2 className="w-3 h-3" /> DVD
                 </TabsTrigger>
               </TabsList>
             </div>
-
             <div className="flex-1 overflow-hidden relative">
               {rightPanelTab === 'playlist' ? (
                  <CarPlaylist tracks={playlist} currentTrack={currentTrack} onSelectTrack={(t) => { loadTrack(t); play(); }} onRemoveTrack={removeTrack} />
               ) : (
                  <DiscoveryHub 
+                   user={user}
                    currentTrack={currentTrack}
-                   onLoadAlbum={(tracks) => { setPlaylist(tracks); setRightPanelTab('playlist'); }} 
+                   onLoadAlbum={async (tracks) => { 
+                     setPlaylist(tracks); 
+                     setRightPanelTab('playlist');
+                     if (tracks.length > 0) { await loadTrack(tracks[0]); play(); }
+                   }} 
                    onPlayTrack={(t) => {
                      const existingIdx = findTrackIndex(t);
-                     if (existingIdx === -1) {
-                       setPlaylist(prev => [t, ...prev]);
-                     }
-                     loadTrack(t);
-                     play();
+                     if (existingIdx === -1) setPlaylist(prev => [t, ...prev]);
+                     loadTrack(t); play();
                    }} 
                  />
               )}
@@ -515,19 +555,33 @@ function App() {
       
       {currentView === 'equalizer' && (
         <div className="fixed inset-0 z-[100] bg-[var(--bg-dark)]">
-          <Equalizer 
-            onGainChange={handleGainChange} onBassChange={handleBassChange} onTrebleChange={handleTrebleChange}
-            onVolumeChange={changeVolume} currentVolume={volume} isFullScreen={true}
-            onBack={() => setCurrentView('player')} getVisualizerData={getVisualizerData}
-          />
+          <Equalizer onGainChange={handleGainChange} onBassChange={handleBassChange} onTrebleChange={handleTrebleChange} onVolumeChange={changeVolume} currentVolume={volume} isFullScreen={true} onBack={() => setCurrentView('player')} getVisualizerData={getVisualizerData} />
         </div>
       )}
-
       {currentView === 'help' && (
         <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
           <HelpPage onBack={() => setCurrentView('player')} />
         </div>
       )}
+      {currentView === 'settings' && (
+        <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
+          <SettingsPage onBack={() => setCurrentView('player')} />
+        </div>
+      )}
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden flex items-center justify-around h-16 bg-[var(--bg-dark)] border-t border-white/10 px-4 z-[120] relative">
+        <button onClick={() => setMobileTab('player')} className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'player' ? 'text-blue-400' : 'text-gray-500'}`}>
+          <div className={`p-1.5 rounded-lg ${mobileTab === 'player' ? 'bg-blue-400/20' : ''}`}>
+             <div className="w-5 h-5 bg-current" style={{ WebkitMask: 'url("/icons/car.svg") no-repeat center', mask: 'url("/icons/car.svg") no-repeat center' }} />
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Player</span>
+        </button>
+        <button onClick={() => setMobileTab('dvd')} className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'dvd' ? 'text-purple-400' : 'text-gray-500'}`}>
+          <div className={`p-1.5 rounded-lg ${mobileTab === 'dvd' ? 'bg-purple-400/20' : ''}`}> <Disc2 className="w-5 h-5" /> </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Discovery</span>
+        </button>
+      </div>
     </div>
   );
 }

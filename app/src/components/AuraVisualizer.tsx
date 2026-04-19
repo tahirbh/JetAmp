@@ -177,34 +177,43 @@ export function AuraVisualizer({
         const x = paddingX + i * (barWidth + barGap);
         const segmentHeight = (height - 20) / (STACK_SEGMENTS + 1);
         
-        let lastPeakColor = '#ffffff';
 
+        ctx.shadowBlur = 0; // Disable shadow for background segments
         for (let s = 0; s < STACK_SEGMENTS; s++) {
           const segmentY = height - 10 - (s + 1) * (segmentHeight + GAP_SIZE);
-          const { color, glow, peakBase } = getSegmentColor(s, STACK_SEGMENTS, mode);
-          if (s === peakSegment) lastPeakColor = peakBase;
+          const { color } = getSegmentColor(s, STACK_SEGMENTS, mode);
 
           if (s < segmentsToShow) {
-            ctx.shadowBlur = s < segmentsToShow - 1 ? 0 : 15; // Only glow the top segment
-            ctx.shadowColor = glow;
             ctx.fillStyle = color;
             ctx.fillRect(x, segmentY, barWidth, segmentHeight);
           } else {
              // Unlit background segments
-            ctx.shadowBlur = 0;
             ctx.fillStyle = 'rgba(40, 40, 50, 0.15)';
             ctx.fillRect(x, segmentY, barWidth, segmentHeight);
           }
         }
 
-        // Draw gravity peak bar
+        // Apply GLOW only to the TOP-most lit segment for performance
+        if (segmentsToShow > 0) {
+          const s = segmentsToShow - 1;
+          const segmentY = height - 10 - (s + 1) * (segmentHeight + GAP_SIZE);
+          const { color, glow } = getSegmentColor(s, STACK_SEGMENTS, mode);
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = glow;
+          ctx.fillStyle = color;
+          ctx.fillRect(x, segmentY, barWidth, segmentHeight);
+        }
+
+        // Draw gravity peak bar with glow (only 1 shadow op here)
         if (peakSegment > 0) {
            const peakY = height - 10 - (peakSegment + 1) * (segmentHeight + GAP_SIZE);
-           ctx.shadowBlur = 10;
-           ctx.shadowColor = lastPeakColor;
-           ctx.fillStyle = lastPeakColor;
-           ctx.fillRect(x, peakY, barWidth, Math.max(2, segmentHeight / 3)); // Gravity lines are slightly thinner
+           const { peakBase } = getSegmentColor(peakSegment, STACK_SEGMENTS, mode);
+           ctx.shadowBlur = 12;
+           ctx.shadowColor = peakBase;
+           ctx.fillStyle = peakBase;
+           ctx.fillRect(x, peakY, barWidth, Math.max(2, segmentHeight / 3));
         }
+        ctx.shadowBlur = 0; // Reset for next bar
       }
     }
   }, [getVisualizerData, isPlaying, barCount, mode, isSimulated, generateSimulatedData]);

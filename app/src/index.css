@@ -23,6 +23,14 @@
     --glow-purple: #aa00ff;
     --glow-pink: #ff10f0;
 
+    /* Claymorphism Tokens */
+    --clay-bg: rgba(30, 30, 45, 0.85);
+    --clay-shadow-out: 8px 8px 16px rgba(0, 0, 0, 0.4), -4px -4px 12px rgba(255, 255, 255, 0.05);
+    --clay-shadow-in: inset 2px 2px 4px rgba(255, 255, 255, 0.1), inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+    --clay-shadow-active: inset 4px 4px 8px rgba(0, 0, 0, 0.5), inset -2px -2px 4px rgba(255, 255, 255, 0.05);
+    --clay-glow: 0 0 15px rgba(0, 212, 255, 0.3);
+
+
     /* Metallic Colors */
     --metal-gold-light: #f6e27a;
     --metal-gold-mid: #cb9b51;
@@ -320,14 +328,55 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* ===== PANEL STYLES ===== */
 .glass-panel {
-  background: linear-gradient(180deg, rgba(26, 26, 37, 0.95) 0%, rgba(18, 18, 26, 0.98) 100%);
-  border: 1px solid var(--metal-mid);
-  border-radius: 12px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(0, 212, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
+
+.clay-btn {
+  background: var(--clay-bg);
+  box-shadow: var(--clay-shadow-out), var(--clay-shadow-in);
+  border: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+}
+
+.clay-btn:hover {
+  transform: translateY(-2px);
+  color: white;
+  box-shadow: 8px 12px 20px rgba(0, 0, 0, 0.5), -4px -4px 12px rgba(255, 255, 255, 0.08), var(--clay-glow);
+}
+
+.clay-btn:active, .clay-btn-active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--clay-shadow-active);
+  color: var(--glow-cyan);
+}
+
+.btn-short {
+  min-width: 44px;
+  width: auto;
+  aspect-ratio: 1/1;
+  padding: 0;
+}
+
+/* Tablet Scaling */
+@media (min-width: 640px) and (max-width: 1100px) and (orientation: landscape) {
+  :root {
+    font-size: 14px;
+  }
+  
+  .car-layout {
+    gap: 0.5rem;
+  }
+}
+
+
 
 /* ===== LCD DISPLAY ===== */
 .lcd-display {
@@ -574,9 +623,55 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 
-/* Hide speakers on short screens (Mobile Landscape) to prioritize Player/Playlist */
-@media (max-height: 500px) {
+/* Hide top spectrum on short screens to prioritize Player/Library */
+@media (max-height: 599px) {
   .speaker-column {
     display: none !important;
   }
+  
+  .top-spectrum-area {
+    display: none !important;
+  }
+
+  .bottom-spectrum-area {
+    display: block !important;
+    opacity: 0.6;
+    height: 40px !important;
+  }
+}
+
+
+/* ===== SMART MOBILE LANDSCAPE RULES ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-hide { 
+    display: none !important; 
+  }
+  
+  .landscape-full-height { 
+    height: 100% !important; 
+    margin-top: 0 !important; 
+    max-height: none !important; 
+    max-width: none !important;
+    aspect-ratio: auto !important;
+  }
+  
+  .landscape-bottom-spectrum { 
+    display: block !important; 
+    opacity: 0.4; 
+    height: 30px !important; 
+  }
+
+  /* Make panels fill the screen more efficiently in landscape */
+  .car-layout {
+    gap: 0 !important;
+  }
+}
+
+/* Rainbow Line Horizontal */
+.rainbow-line-horizontal {
+  height: 2px;
+  background: linear-gradient(90deg, 
+    var(--rainbow-1), var(--rainbow-2), var(--rainbow-3), 
+    var(--rainbow-4), var(--rainbow-5), var(--rainbow-6), var(--rainbow-7));
+  opacity: 0.5;
 }

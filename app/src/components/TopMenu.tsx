@@ -26,6 +26,7 @@ interface TopMenuProps {
   onPrev: () => void;
   onNext: () => void;
   onShowHelp: () => void;
+  onShowSettings: () => void;
   onSetVisualizerStyle: (style: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow') => void;
   isPlaying: boolean;
   currentStyle: 'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow';
@@ -41,13 +42,15 @@ export function TopMenu({
   onPrev,
   onNext,
   onShowHelp,
+  onShowSettings,
   onSetVisualizerStyle,
   isPlaying,
   currentStyle,
 }: TopMenuProps) {
   return (
-    <div className="w-full bg-[var(--bg-panel)] border-b border-[var(--metal-dark)] relative z-50">
-      <Menubar className="border-none bg-transparent">
+    <div className="w-full relative z-50 glass-panel !rounded-none border-t-0 border-x-0">
+      <Menubar className="border-none bg-transparent h-10">
+
         <MenubarMenu>
           <MenubarTrigger className="data-[state=open]:bg-[var(--metal-dark)] text-gray-300 hover:text-white transition-colors cursor-pointer px-4">
             Media
@@ -93,7 +96,7 @@ export function TopMenu({
 
         <MenubarMenu>
           <MenubarTrigger className="data-[state=open]:bg-[var(--metal-dark)] text-gray-300 hover:text-white transition-colors cursor-pointer px-4">
-            Audio
+            CD MP3
           </MenubarTrigger>
           <MenubarContent className="bg-[var(--bg-card)] border-[var(--metal-dark)] text-gray-300 shadow-2xl">
             <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer">
@@ -161,7 +164,7 @@ export function TopMenu({
               <Info size={16} /> Disco Aura Wiki & Help
             </MenubarItem>
             <MenubarSeparator className="bg-[var(--metal-dark)]" />
-            <MenubarItem className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer opacity-50">
+            <MenubarItem onClick={onShowSettings} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer text-white">
               <Settings size={16} /> System Settings
             </MenubarItem>
           </MenubarContent>
@@ -169,7 +172,7 @@ export function TopMenu({
 
         <div className="ml-auto flex items-center pr-4 gap-2">
             <Music className="w-4 h-4 text-[var(--glow-cyan)] animate-pulse" />
-            <span className="text-[10px] sm:text-xs font-black rainbow-text tracking-[0.2em] uppercase">Disco Aura Hi-Fi</span>
+            <span className="text-[10px] sm:text-xs font-black rainbow-text tracking-[0.2em] uppercase">Disco Aura Hi-Fi v1.0.3</span>
         </div>
       </Menubar>
     </div>
