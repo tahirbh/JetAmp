@@ -295,8 +295,11 @@ function App() {
     } else {
       try {
         await audioElementRef.current?.play();
-      } catch (e) {
-        console.error('Playback failed:', e);
+      } catch (e: any) {
+        // AbortError is benign — it means play() was interrupted by pause() (e.g. rapid track switching)
+        if (e?.name !== 'AbortError') {
+          console.error('Playback failed:', e);
+        }
       }
     }
   }, [playlist, loadTrack, currentTrack]);
