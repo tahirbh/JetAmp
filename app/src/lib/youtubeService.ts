@@ -27,6 +27,13 @@ export const YouTubeService = {
           'Authorization': `Bearer ${user.token}`
         }
       });
+
+      if (response.status === 401) {
+        console.error('YouTube API: 401 Unauthorized - Session expired');
+        AuthService.logout();
+        throw new Error('AUTH_EXPIRED');
+      }
+
       const data = await response.json();
       
       return (data.items || []).map((item: any) => ({
@@ -35,7 +42,8 @@ export const YouTubeService = {
         thumbnails: item.snippet.thumbnails,
         itemCount: item.contentDetails.itemCount
       }));
-    } catch (e) {
+    } catch (e: any) {
+      if (e.message === 'AUTH_EXPIRED') throw e;
       console.error('Failed to fetch YouTube playlists:', e);
       return [];
     }

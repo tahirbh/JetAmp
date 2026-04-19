@@ -58,21 +58,30 @@ export function CarPlayer({
   const isYouTube = currentTrack?.source === 'youtube';
   const isCinemaMode = isYouTube && !forceDashMode;
 
-  // Extract the bare YouTube video ID from either path or url
+  // Extract the bare YouTube video ID (or yt-search-* fallback id) for the player
   const getYouTubeVideoId = (): string => {
-    const raw = currentTrack?.path || currentTrack?.url || '';
-    // Already a bare video ID (11 chars, no slashes or query params)
-    if (raw && !raw.includes('/') && !raw.includes('?')) return raw;
-    // Extract from ?v=VIDEO_ID
+    // 1. iTunes fallback: id is 'yt-search-{trackId}:{searchQuery}' — pass through as-is
+    //    YouTubePlayer handles this format with listType:'search'
+    const trackId = currentTrack?.id || '';
+    if (trackId.startsWith('yt-search')) return trackId;
+
+    // 2. Bare videoId stored in path (set by Piped proxy)
+    const path = currentTrack?.path || '';
+    if (path && !path.includes('/') && !path.includes('?')) return path;
+
+    // 3. Extract ?v=VIDEO_ID from a full YouTube watch URL
+    const url = currentTrack?.url || '';
     try {
-      const urlObj = new URL(raw);
+      const urlObj = new URL(url);
       const v = urlObj.searchParams.get('v');
       if (v) return v;
-      // youtu.be/VIDEO_ID
+      // youtu.be/VIDEO_ID short URLs
       const parts = urlObj.pathname.split('/').filter(Boolean);
-      if (parts.length > 0) return parts[parts.length - 1];
+      if (parts.length > 0 && urlObj.hostname.includes('youtu.be')) return parts[parts.length - 1];
     } catch {}
-    return raw;
+
+    // 4. Last resort: use the track id directly
+    return trackId;
   };
   const youtubeVideoId = isYouTube ? getYouTubeVideoId() : '';
 
