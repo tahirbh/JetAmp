@@ -387,8 +387,6 @@ function App() {
       
       const enrichmentResults = await Promise.all(batch.map(async (file, idx) => {
         const globalIdx = i + idx;
-        const { title, artist } = initialTracks[globalIdx];
-        
         // Update status for each file in batch
         setImportStatus(prev => prev ? { ...prev, current: globalIdx + 1, fileName: file.name } : null);
 

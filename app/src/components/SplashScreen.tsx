@@ -85,7 +85,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       </div>
 
       <div className="absolute bottom-12 text-white/10 text-[9px] font-bold tracking-[0.5em] uppercase">
-        V1.0.3 Digital Audio Workstation
+        V1.0.5 Digital Audio Workstation
       </div>
     </div>
   );
