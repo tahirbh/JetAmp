@@ -13,6 +13,7 @@ import { Disc2, ListMusic } from 'lucide-react';
 import { SplashScreen } from '@/components/SplashScreen';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { UserGuideModal } from '@/components/UserGuideModal';
+import { LoginModal } from '@/components/LoginModal';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -88,6 +89,7 @@ function App() {
   const [mobileTab, setMobileTab] = useState<'player' | 'dvd'>('player');
   const [showSplash, setShowSplash] = useState(true);
   const [showUserGuide, setShowUserGuide] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [importStatus, setImportStatus] = useState<{ current: number; total: number; fileName: string } | null>(null);
   const [visualizerStyle, setVisualizerStyle] = useState<'sanyo' | 'sony' | 'panasonic' | 'akai' | 'oscilloscope' | 'gunmetal' | 'rainbow'>('sanyo');
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
@@ -580,6 +582,7 @@ function App() {
                      loadTrack(t); play();
                       setMobileTab('player'); // auto-switch to player on mobile
                    }} 
+                   onOpenLogin={() => setIsLoginModalOpen(true)}
                  />
               )}
             </div>
@@ -632,6 +635,10 @@ function App() {
         />
       )}
       <UserGuideModal isOpen={showUserGuide} onClose={handleCloseGuide} />
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </div>
   );
 }

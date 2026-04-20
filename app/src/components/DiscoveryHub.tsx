@@ -16,9 +16,10 @@ interface DiscoveryHubProps {
   onLoadAlbum: (tracks: Track[]) => void;
   onAddTrack: (track: Track) => void;
   onPlayTrack: (track: Track) => void;
+  onOpenLogin: () => void;
 }
 
-export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPlayTrack }: DiscoveryHubProps) {
+export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPlayTrack, onOpenLogin }: DiscoveryHubProps) {
   const [query, setQuery] = useState('modrec');
   const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('video');
   const [loading, setLoading] = useState(false);
@@ -147,17 +148,27 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
             <p className="text-xs text-blue-300/60 font-medium">YouTube & Online Content</p>
           </div>
           <div className="ml-auto">
-             <Button 
-               size="sm" 
-               variant="ghost" 
-               className="text-[10px] text-white/40 hover:text-red-400 uppercase font-black tracking-widest px-2 h-7"
-               onClick={() => {
-                 AuthService.logout();
-                 window.location.reload(); 
-               }}
-             >
-               Logout
-             </Button>
+             {user ? (
+               <Button 
+                 size="sm" 
+                 variant="ghost" 
+                 className="text-[10px] text-white/40 hover:text-red-400 uppercase font-black tracking-widest px-2 h-7"
+                 onClick={() => {
+                   AuthService.logout();
+                   window.location.reload(); 
+                 }}
+               >
+                 Logout
+               </Button>
+             ) : (
+               <Button 
+                 size="sm" 
+                 className="bg-blue-600 hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest px-3 h-7 rounded-sm shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-all active:scale-95 border-t border-white/20"
+                 onClick={onOpenLogin}
+               >
+                 Sign In
+               </Button>
+             )}
           </div>
         </div>
       </div>
@@ -333,9 +344,23 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 px-6">
-                    <Music className="w-16 h-16 mb-4 stroke-[1]" />
-                    <p className="text-sm">Search for any {searchMode === 'video' ? 'video' : 'song'}<br/>to start exploring.</p>
+                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 px-6">
+                    <div className="p-4 bg-white/5 rounded-full border border-white/10 opacity-40">
+                      <Music className="w-16 h-16 stroke-[1]" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-white/60 uppercase tracking-widest">Guest Mode</p>
+                      <p className="text-xs text-white/30">Search results are limited. <br/> Sign in for your full library.</p>
+                    </div>
+                    {!user && (
+                      <Button 
+                        variant="link" 
+                        className="text-[10px] text-blue-400 font-black uppercase tracking-widest h-auto p-0 hover:text-blue-300"
+                        onClick={onOpenLogin}
+                      >
+                        Sign in with Google
+                      </Button>
+                    )}
                   </div>
                 )
               )}
