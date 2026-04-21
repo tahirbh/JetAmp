@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Menubar,
   MenubarContent,
@@ -13,7 +14,7 @@ import {
 import { 
   FileAudio, FolderOpen, Globe, Play, 
   Pause, Square, SkipBack, SkipForward,
-  Activity, Settings, Info, Music, HelpCircle
+  Activity, Settings, Info, Music, HelpCircle, Download
 } from 'lucide-react';
 
 interface TopMenuProps {
@@ -49,6 +50,27 @@ export function TopMenu({
   isPlaying,
   currentStyle,
 }: TopMenuProps) {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('PWA Install Prompt Captured');
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
   return (
     <div className="w-full relative z-50 glass-panel !rounded-none border-t-0 border-x-0">
       <Menubar className="border-none bg-transparent h-10">
@@ -172,6 +194,14 @@ export function TopMenu({
             <MenubarItem onClick={onShowSettings} className="flex items-center gap-2 focus:bg-[var(--glow-cyan)]/10 cursor-pointer text-white">
               <Settings size={16} /> System Settings
             </MenubarItem>
+            {deferredPrompt && (
+              <>
+                <MenubarSeparator className="bg-[var(--metal-dark)]" />
+                <MenubarItem onClick={handleInstall} className="flex items-center gap-2 focus:bg-blue-600/30 focus:text-blue-400 cursor-pointer font-black text-blue-300 animate-pulse">
+                  <Download size={16} /> Download & Install App
+                </MenubarItem>
+              </>
+            )}
           </MenubarContent>
         </MenubarMenu>
 
