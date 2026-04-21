@@ -1,12 +1,22 @@
 
-import { ArrowLeft, Download, Shield, Settings, Monitor, Smartphone } from 'lucide-react';
+import { ArrowLeft, Download, Settings, Monitor, Smartphone, Cpu, Box } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface SettingsPageProps {
+  settings: {
+    deckMode: boolean;
+    autoResolve: boolean;
+    highRes: boolean;
+  };
+  onUpdateSettings: (settings: any) => void;
   onBack: () => void;
 }
 
-export function SettingsPage({ onBack }: SettingsPageProps) {
+export function SettingsPage({ settings, onUpdateSettings, onBack }: SettingsPageProps) {
+  const toggleSetting = (key: string) => {
+    onUpdateSettings({ ...settings, [key]: !((settings as any)[key]) });
+  };
+
   return (
     <div className="h-full w-full flex flex-col bg-[var(--bg-dark)] text-white overflow-hidden p-6 sm:p-10">
       {/* Header */}
@@ -54,29 +64,49 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             </div>
           </div>
 
-          {/* Section: Interface Scaling */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/5 border border-white/5 rounded-3xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Monitor className="w-5 h-5 text-purple-400" />
-                <h4 className="font-bold text-gray-200">Display Scaling</h4>
-              </div>
-              <p className="text-xs text-gray-500 mb-4">Optimize the UI for 7-inch vs 10-inch car screens.</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 border-white/10 text-[10px] h-8">Compact</Button>
-                <Button variant="default" size="sm" className="flex-1 bg-purple-600 h-8 text-[10px]">Standard</Button>
-              </div>
+          {/* Section: Interface Control */}
+          <div className="bg-black/40 backdrop-blur-xl border border-white/5 rounded-3xl p-8 space-y-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Cpu className="w-5 h-5 text-blue-400" />
+              <h3 className="text-xl font-bold text-white">Hi-Fi System Logic</h3>
             </div>
-
-            <div className="bg-white/5 border border-white/5 rounded-3xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Shield className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-bold text-gray-200">Audio Permissions</h4>
+            
+            <div className="space-y-4">
+              <div 
+                onClick={() => toggleSetting('deckMode')}
+                className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <Box className={`w-5 h-5 transition-colors ${settings.deckMode ? 'text-blue-400' : 'text-gray-400'}`} />
+                  <div>
+                    <h4 className="font-bold text-sm">Graphical Deck Mode</h4>
+                    <p className="text-[10px] text-gray-500">Enable the JetAudio Multi-Deck entry point over standard tabs.</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full relative transition-colors ${settings.deckMode ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg transition-all ${settings.deckMode ? 'right-1' : 'left-1'}`} />
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mb-4">Allow access to high-resolution microphone for visualizers.</p>
-              <Button variant="outline" size="sm" className="w-full border-emerald-500/20 text-emerald-400 text-[10px] h-8">Enable Laboratory Access</Button>
+
+              <div 
+                onClick={() => toggleSetting('autoResolve')}
+                className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <Monitor className={`w-5 h-5 transition-colors ${settings.autoResolve ? 'text-blue-400' : 'text-gray-400'}`} />
+                  <div>
+                    <h4 className="font-bold text-sm">Instant Resolution</h4>
+                    <p className="text-[10px] text-gray-500">Automatically upgrade commercial previews to full streams.</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full relative transition-colors ${settings.autoResolve ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg transition-all ${settings.autoResolve ? 'right-1' : 'left-1'}`} />
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Section: Device Calibration */}
 
           {/* Version Info */}
           <div className="text-center pt-8 opacity-20">

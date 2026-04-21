@@ -14,7 +14,6 @@ import { UserGuideModal } from '@/components/UserGuideModal';
 import { LoginModal } from '@/components/LoginModal';
 import { MusicService } from '@/lib/musicService';
 import { ListMusic, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -97,6 +96,21 @@ function App() {
   const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
   const [seekTime, setSeekTime] = useState<number | undefined>(undefined);
   const [isPlaylistVisible, setIsPlaylistVisible] = useState(true);
+  const [isDeckExpanded, setIsDeckExpanded] = useState(true);
+
+  // System Settings
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('jetaudio-system-settings');
+    return saved ? JSON.parse(saved) : {
+      deckMode: true,
+      autoResolve: true,
+      highRes: false
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('jetaudio-system-settings', JSON.stringify(settings));
+  }, [settings]);
   const touchStartRef = useRef<number | null>(null);
 
   // Load from localStorage & Handle OAuth Callback
@@ -259,7 +273,7 @@ function App() {
     
     // 2. iTunes/Deezer Tracks need Stream Resolution (finding a playable Audio URL)
     let playableUrl = track.url;
-    if ((track.source === 'itunes' || track.source === 'deezer') && track.url?.includes('-resolve:')) {
+    if (settings.autoResolve && (track.source === 'itunes' || track.source === 'deezer') && track.url?.includes('-resolve:')) {
       const query = track.url.split('-resolve:')[1];
       
       try {
@@ -643,37 +657,89 @@ function App() {
                       <ListMusic className="w-5 h-5 text-blue-400" />
                       <h2 className="text-lg font-bold tracking-tight text-blue-50">Local Playlist</h2>
                     </div>
+                    {settings.deckMode && (
+                      <button 
+                        onClick={() => setIsDeckExpanded(!isDeckExpanded)}
+                        className={`p-2 rounded-xl transition-all ${isDeckExpanded ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400 hover:text-white'}`}
+                        title={isDeckExpanded ? "Show List" : "Show Deck Card"}
+                      >
+                        <Search className="w-5 h-5" />
+                      </button>
+                    )}
                  </div>
 
-                 <CarPlaylist 
-                   tracks={playlist} 
-                   currentTrack={currentTrack} 
-                   onSelectTrack={(t) => { loadTrack(t); play(); }} 
-                   onRemoveTrack={removeTrack} 
-                 />
+                 <div className="flex-1 relative overflow-hidden">
+                   {settings.deckMode && isDeckExpanded ? (
+                     <div className="absolute inset-0 z-10 flex flex-col bg-black animate-in fade-in duration-500">
+                        <div 
+                          className="relative w-full h-full cursor-pointer group flex-1 overflow-hidden"
+                          onClick={() => setRightPanelTab('discovery')}
+                        >
+                          {/* Main Mesh Image (Full Bleed) */}
+                          <img 
+                            src="/jetaudio-triple-mesh.png" 
+                            className="w-full h-full object-cover transform transition-transform duration-[2s] group-hover:scale-110" 
+                            alt="JetAudio Multi-Deck Mesh"
+                          />
+                          
+                          {/* Minimal Overlays */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+                          <div className="absolute top-6 left-6 flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,1)]" />
+                             <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">System Active</span>
+                          </div>
 
-                 {/* NANO BANANA MULTIMEDIA STACK TOGGLE */}
-                 <div 
-                   className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 cursor-pointer group"
-                   onClick={() => setRightPanelTab('discovery')}
-                 >
-                    <div className="relative">
-                      <div className="absolute -inset-4 bg-blue-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-pulse"></div>
-                      <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl transform transition-transform group-hover:scale-110 group-active:scale-95 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                        <img 
-                          src="/jetaudio-deck.png" 
-                          className="w-16 h-16 object-contain rounded-xl" 
-                          alt="JetAudio Multi-Deck Player"
-                        />
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white uppercase tracking-tighter shadow-lg">Hi-Fi</div>
-                      </div>
-                      <div className="mt-2 text-center">
-                         <Badge className="bg-blue-600/20 text-blue-300 text-[8px] border-blue-500/30 uppercase font-black tracking-widest px-2 py-0.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                           Open DVD / Discovery
-                         </Badge>
-                      </div>
-                    </div>
+                          {/* Hover Interaction Indicator */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 bg-blue-900/10 backdrop-blur-[2px]">
+                             <div className="relative">
+                               <div className="absolute -inset-10 bg-blue-400/20 blur-[40px] rounded-full animate-pulse" />
+                               <div className="w-20 h-20 bg-black/60 rounded-full flex items-center justify-center border border-white/20 shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
+                                  <Search className="w-8 h-8 text-blue-400" />
+                               </div>
+                             </div>
+                          </div>
+                        </div>
+
+                        {/* Playlist Toggle Button (Floating outside/on-bottom) */}
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setIsDeckExpanded(false); }}
+                            className="flex items-center gap-3 px-8 py-3 bg-white/5 hover:bg-blue-600/20 backdrop-blur-2xl border border-white/10 hover:border-blue-500/50 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all shadow-2xl active:scale-95 group"
+                          >
+                            <ListMusic className="w-4 h-4 text-blue-400" />
+                            <span>Return to Playlist</span>
+                          </button>
+                        </div>
+                     </div>
+                   ) : (
+                     <CarPlaylist 
+                       tracks={playlist} 
+                       currentTrack={currentTrack} 
+                       onSelectTrack={(t) => { loadTrack(t); play(); }} 
+                       onRemoveTrack={removeTrack} 
+                     />
+                   )}
                  </div>
+
+                 {/* MINI DECK TOGGLE (Only when not expanded) */}
+                 {settings.deckMode && !isDeckExpanded && (
+                   <div 
+                     className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 cursor-pointer group"
+                     onClick={() => setIsDeckExpanded(true)}
+                   >
+                      <div className="relative">
+                        <div className="absolute -inset-4 bg-blue-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-pulse"></div>
+                        <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl transform transition-transform group-hover:scale-110 group-active:scale-95 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                          <img 
+                            src="/jetaudio-deck.png" 
+                            className="w-16 h-16 object-contain rounded-xl" 
+                            alt="JetAudio Multi-Deck Player"
+                          />
+                          <div className="absolute -top-1 -right-1 bg-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white uppercase tracking-tighter shadow-lg">Hi-Fi</div>
+                        </div>
+                      </div>
+                   </div>
+                 )}
                </div>
             ) : (
                <DiscoveryHub 
@@ -726,7 +792,11 @@ function App() {
       )}
       {currentView === 'settings' && (
         <div className="fixed inset-0 z-[110] bg-[var(--bg-dark)]">
-          <SettingsPage onBack={() => setCurrentView('player')} />
+          <SettingsPage 
+            settings={settings}
+            onUpdateSettings={setSettings}
+            onBack={() => setCurrentView('player')} 
+          />
         </div>
       )}
 
