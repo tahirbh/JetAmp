@@ -1,4 +1,4 @@
-import { Search, Loader2, Music, Library, Disc2, Video } from 'lucide-react';
+import { Search, Loader2, Music, Library, Disc2, Video, HardDrive } from 'lucide-react';
 import { MusicService } from '@/lib/musicService';
 import { YouTubeService } from '@/lib/youtubeService';
 import type { Album } from '@/lib/musicService';
@@ -21,7 +21,7 @@ interface DiscoveryHubProps {
 
 export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPlayTrack, onOpenLogin }: DiscoveryHubProps) {
   const [query, setQuery] = useState('modrec');
-  const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video'>('video');
+  const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video' | 'mp3'>('video');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +31,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
   const [albumTracks, setAlbumTracks] = useState<Track[]>([]);
 
   const handleSearch = async (isInitial = false) => {
+    // If initial, we always want the default 'modrec' video/track results
     const searchQuery = isInitial ? 'modrec' : query;
+    const currentMode = isInitial ? 'video' : searchMode;
+    
     if (!searchQuery) return;
     
     setLoading(true);
@@ -39,7 +42,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
     setSelectedAlbum(null);
     
     try {
-      if (searchMode === 'album' && !isInitial) {
+      if (currentMode === 'album' && !isInitial) {
         if (!user) {
           // If not logged in, we search Audius for playlists
           const results = await MusicService.searchAlbums(searchQuery);
@@ -56,9 +59,13 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
             source: 'youtube'
           })));
         }
-      } else if (searchMode === 'track' || searchMode === 'video') {
+      } else if (currentMode === 'mp3') {
+        const results = await MusicService.searchMP3Albums(searchQuery);
+        setAlbums(results);
+        setTracks([]);
+      } else if (currentMode === 'track' || currentMode === 'video') {
         // USE FALLBACK PROXY if not logged in or for best reliability
-        if (!user || searchMode === 'video') {
+        if (!user || currentMode === 'video') {
           const results = await MusicService.searchYouTube(searchQuery);
           setTracks(results);
           setAlbums([]);
@@ -124,6 +131,8 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
       let tracks: Track[] = [];
       if (album.source === 'youtube') {
         tracks = await YouTubeService.fetchPlaylistTracks(album.id);
+      } else if (album.source === 'itunes') {
+        tracks = await MusicService.getMP3AlbumTracks(album);
       } else {
         tracks = await MusicService.getAlbumTracks(album.id);
       }
@@ -202,6 +211,15 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           >
             <Video className="w-5 h-5" />
           </Button>
+          <Button 
+            size="sm"
+            variant={searchMode === 'mp3' ? 'default' : 'outline'}
+            onClick={() => setSearchMode('mp3')}
+            className={`clay-btn btn-short ${searchMode === 'mp3' ? 'clay-btn-active' : ''}`}
+            title="MP3 Albums"
+          >
+            <HardDrive className="w-5 h-5" />
+          </Button>
         </div>
 
         <div className="flex gap-2">
@@ -212,7 +230,11 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={searchMode === 'album' ? "Search playlists..." : searchMode === 'track' ? "Search songs..." : "Search any video..."}
+              placeholder={
+                searchMode === 'album' ? "Search playlists..." : 
+                searchMode === 'mp3' ? "Search MP3 Albums..." :
+                searchMode === 'track' ? "Search songs..." : "Search any video..."
+              }
               className="bg-black/40 border-white/10 text-white h-10 pl-10 focus:ring-blue-500/50"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -250,7 +272,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
             </div>
           ) : !selectedAlbum ? (
             <>
-              {searchMode === 'album' ? (
+              {searchMode === 'album' || searchMode === 'mp3' ? (
                 albums.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4">
                     {albums.map((album) => (
@@ -269,7 +291,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                         </div>
                         <div className="px-1">
                           <h3 className="text-sm font-semibold truncate leading-tight group-hover:text-blue-200">{album.title}</h3>
-                          <p className="text-xs text-white/40 truncate">{album.artist}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-white/40 truncate">{album.artist}</p>
+                            {album.year && <span className="text-[10px] text-white/20">{album.year}</span>}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -277,7 +302,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                     <Library className="w-16 h-16 mb-4 stroke-[1]" />
-                    <p className="text-sm">Search for an artist or album<br/>to start exploring.</p>
+                    <p className="text-sm">Search for an artist or album<br/>to start exploring MP3s.</p>
                   </div>
                 )
               ) : (

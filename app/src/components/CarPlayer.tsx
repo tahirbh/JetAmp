@@ -223,7 +223,7 @@ export function CarPlayer({
         </div>
 
         {/* BOTTOM RESPONSIVE SPECTRUM (Visible only in bottom spectrum area) */}
-        <div className="absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none hidden bottom-spectrum-area">
+        <div className="absolute bottom-0 left-0 w-full h-10 z-50 pointer-events-none bottom-spectrum-area">
            <AuraVisualizer
               getVisualizerData={getCombinedVisualizerData}
               isPlaying={isPlaying}

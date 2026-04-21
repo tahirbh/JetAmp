@@ -9,11 +9,12 @@ import { HelpPage } from '@/components/HelpPage';
 import { DiscoveryHub } from '@/components/DiscoveryHub';
 import { SettingsPage } from '@/components/SettingsPage';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Disc2, ListMusic } from 'lucide-react';
+import { Disc2, ListMusic, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SplashScreen } from '@/components/SplashScreen';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { UserGuideModal } from '@/components/UserGuideModal';
 import { LoginModal } from '@/components/LoginModal';
+import { MusicService } from '@/lib/musicService';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -95,6 +96,8 @@ function App() {
   const [rightPanelTab, setRightPanelTab] = useState<'playlist' | 'discovery'>('playlist');
   const [user, setUser] = useState<UserProfile | null>(AuthService.getUser());
   const [seekTime, setSeekTime] = useState<number | undefined>(undefined);
+  const [isPlaylistVisible, setIsPlaylistVisible] = useState(true);
+  const touchStartRef = useRef<number | null>(null);
 
   // Load from localStorage & Handle OAuth Callback
   useEffect(() => {
@@ -133,10 +136,28 @@ function App() {
           url: t.source === 'local' ? '' : t.url 
         };
       }).filter(Boolean)));
-    } catch (e) {
-      console.error('Failed to save library:', e);
-    }
+      } catch (e) {
+        console.error('Failed to save library:', e);
+      }
   }, [playlist]);
+
+
+  const handleManualTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleManualTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStartRef.current - touchEnd;
+    
+    // Swipe left (reveal)
+    if (diff > 50) setIsPlaylistVisible(true);
+    // Swipe right (hide)
+    if (diff < -50) setIsPlaylistVisible(false);
+    
+    touchStartRef.current = null;
+  };
 
   // Audio Engine Core
   const initAudio = useCallback(() => {
@@ -227,6 +248,7 @@ function App() {
 
     audio.pause();
     
+    // 1. YouTube specialized tracks use the YouTubePlayer component
     if (track.source === 'youtube') {
       setCurrentTrack(track);
       setCurrentTime(0);
@@ -235,16 +257,31 @@ function App() {
       return;
     }
     
-    if (!track.url) return;
+    // 2. iTunes Tracks need Stream Resolution (finding a playable Audio URL)
+    let playableUrl = track.url;
+    if (track.source === 'itunes' && track.url?.startsWith('itunes-resolve:')) {
+      const query = track.url.replace('itunes-resolve:', '');
+      try {
+        const results = await MusicService.searchTracks(query);
+        if (results && results.length > 0) {
+          playableUrl = results[0].url;
+          // Update the original track object so we don't resolve it again next time
+          track.url = playableUrl;
+          if (!track.duration) track.duration = results[0].duration;
+        }
+      } catch (e) {
+        console.error('Failed to resolve iTunes stream:', e);
+      }
+    }
+
+    if (!playableUrl) return;
 
     setCurrentTime(0);
     audio.currentTime = 0; 
     setDuration(track.duration || 0);
     
-    if (track.url) {
-      audio.src = track.url;
-      audio.load();
-    }
+    audio.src = playableUrl;
+    audio.load();
 
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
@@ -257,11 +294,18 @@ function App() {
     };
     audio.onended = () => {
       setIsPlaying(false);
-      playNext();
+      // We use a functional call or ref here if needed, but since this is an event 
+      // listener, it will use the closure or we can just trigger next
+      const btn = document.querySelector('[title="Next Track"]') as HTMLButtonElement;
+      if (btn) btn.click();
+      else {
+        // Fallback to manual trigger if button not found
+        window.dispatchEvent(new CustomEvent('jetamp:next'));
+      }
     };
 
     setCurrentTrack(track);
-  }, [initAudio, filters]); 
+  }, [initAudio, filters]); // Removed playNext from dependencies
 
   const findTrackIndex = useCallback((track: Track | null) => {
     if (!track || playlist.length === 0) return -1;
@@ -354,6 +398,13 @@ function App() {
     if (loadTrackRef.current) await loadTrackRef.current(playlist[prevIdx]);
     if (playRef.current) await playRef.current();
   }, [currentTrack, playlist, findTrackIndex]);
+
+  // Bridge for automatic track switching (prevents circular dependencies)
+  useEffect(() => {
+    const handler = () => playNext();
+    window.addEventListener('jetamp:next', handler);
+    return () => window.removeEventListener('jetamp:next', handler);
+  }, [playNext]);
 
   const toggleShuffle = useCallback(() => setShuffleMode(prev => !prev), []);
 
@@ -514,7 +565,11 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-[var(--bg-dark)] flex flex-col overflow-hidden">
+    <div 
+      className="h-screen w-screen bg-[var(--bg-dark)] flex flex-col overflow-hidden"
+      onTouchStart={handleManualTouchStart}
+      onTouchEnd={handleManualTouchEnd}
+    >
       <TopMenu 
         onOpenFile={handleOpenFile} onOpenFolder={handleOpenFolder} onOpenURL={() => setIsURLDialogOpen(true)}
         onPlay={play} onPause={pause} onStop={() => { pause(); seek(0); }}
@@ -542,7 +597,23 @@ function App() {
           />
         </div>
 
-        <div className={`w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-r border-[var(--metal-dark)]/50 bg-[var(--bg-panel)]/10 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'}`}>
+        {/* Manual Playlist Toggle Handle (Desktop only, mobile uses swipe) */}
+        <div className="hidden md:flex items-center relative z-50">
+           <button 
+             onClick={() => setIsPlaylistVisible(!isPlaylistVisible)}
+             className="playlist-toggle-handle flex items-center justify-center"
+             title={isPlaylistVisible ? "Hide Playlist" : "Show Playlist"}
+           >
+             <div className="handle-bar"></div>
+             {isPlaylistVisible ? (
+               <ChevronRight className="w-4 h-4 text-blue-400" />
+             ) : (
+               <ChevronLeft className="w-4 h-4 text-blue-400" />
+             )}
+           </button>
+        </div>
+
+        <div className={`playlist-panel w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-l border-[var(--metal-dark)]/30 bg-[var(--bg-panel)]/40 backdrop-blur-md z-40 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'} ${!isPlaylistVisible ? 'playlist-hidden' : ''}`}>
           <Tabs value={rightPanelTab} onValueChange={(val) => setRightPanelTab(val as any)} className="flex-1 flex flex-col overflow-hidden">
             <div className="p-2 border-b border-white/5 bg-black/20">
               <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">

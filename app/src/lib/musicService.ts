@@ -6,7 +6,8 @@ export interface Album {
   title: string;
   artist: string;
   cover: string;
-  source: 'audius' | 'deezer' | 'youtube';
+  source: 'audius' | 'itunes' | 'youtube';
+  year?: string;
 }
 
 export const MusicService = {
@@ -82,6 +83,60 @@ export const MusicService = {
       }));
     } catch (e) {
       console.error('Track search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Search for high-quality MP3 Albums using iTunes Search API (CORS friendly metadata)
+   */
+  searchMP3Albums: async (query: string): Promise<Album[]> => {
+    if (!query || query.length < 2) return [];
+
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=20`);
+      const data = await response.json();
+      
+      return (data.results || []).map((album: any) => ({
+        id: album.collectionId.toString(),
+        title: album.collectionName,
+        artist: album.artistName,
+        cover: album.artworkUrl100.replace('100x100', '600x600'),
+        source: 'itunes',
+        year: album.releaseDate?.split('-')[0]
+      }));
+    } catch (e) {
+      console.error('MP3 Album search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Get tracklist for an iTunes album and resolve to playable YouTube/Audius streams
+   */
+  getMP3AlbumTracks: async (album: Album): Promise<Track[]> => {
+    try {
+      const response = await fetch(`https://itunes.apple.com/lookup?id=${album.id}&entity=song`);
+      const data = await response.json();
+      
+      // First item is the album, rest are songs
+      const songs = (data.results || []).filter((item: any) => item.wrapperType === 'track');
+      
+      return songs.map((song: any) => ({
+        id: generateId(),
+        title: song.trackName,
+        artist: song.artistName,
+        album: album.title,
+        duration: song.trackTimeMillis / 1000,
+        // RESOLVE: We use a search hint for our player to resolve the actual stream
+        url: `itunes-resolve:${song.artistName} - ${song.trackName}`, 
+        cover: album.cover,
+        isOnline: true,
+        source: 'itunes' 
+      }));
+    } catch (e) {
+      console.error('Failed to resolve MP3 album tracks:', e);
       return [];
     }
   },
