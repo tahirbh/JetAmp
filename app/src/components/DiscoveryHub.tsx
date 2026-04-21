@@ -60,9 +60,16 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           })));
         }
       } else if (currentMode === 'mp3') {
-        const results = await MusicService.searchMP3Albums(searchQuery);
-        setAlbums(results);
-        setTracks([]);
+        const [itunesResults, jamendoResults, jamendoTracks, deezerResults, deezerTracks] = await Promise.all([
+          MusicService.searchMP3Albums(searchQuery),
+          MusicService.searchJamendoAlbums(searchQuery),
+          MusicService.searchJamendoTracks(searchQuery),
+          MusicService.searchDeezerAlbums(searchQuery),
+          MusicService.searchDeezerTracks(searchQuery)
+        ]);
+        
+        setAlbums([...jamendoResults, ...deezerResults, ...itunesResults]);
+        setTracks([...jamendoTracks, ...deezerTracks]);
       } else if (currentMode === 'track' || currentMode === 'video') {
         // USE FALLBACK PROXY if not logged in or for best reliability
         if (!user || currentMode === 'video') {
@@ -133,6 +140,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
         tracks = await YouTubeService.fetchPlaylistTracks(album.id);
       } else if (album.source === 'itunes') {
         tracks = await MusicService.getMP3AlbumTracks(album);
+      } else if (album.source === 'jamendo') {
+        tracks = await MusicService.getJamendoAlbumTracks(album.id, album.title);
+      } else if (album.source === 'deezer') {
+        tracks = await MusicService.getDeezerAlbumTracks(album.id, album.title);
       } else {
         tracks = await MusicService.getAlbumTracks(album.id);
       }
@@ -286,7 +297,14 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                             <img src={album.cover} alt={album.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                           )}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <Music className="w-8 h-8 text-white animate-pulse" />
+                            {album.source === 'jamendo' || album.source === 'deezer' ? (
+                               <div className="flex flex-col items-center">
+                                 <Music className="w-8 h-8 text-white animate-pulse" />
+                                 <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400 mt-1">{album.source}</span>
+                               </div>
+                            ) : (
+                               <Music className="w-8 h-8 text-white animate-pulse" />
+                            )}
                           </div>
                         </div>
                         <div className="px-1">
@@ -355,7 +373,11 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className={`text-sm font-medium truncate ${isCurrent ? 'text-blue-400' : 'group-hover:text-blue-100'}`}>{track.title}</div>
-                              <div className="text-[10px] text-white/40 truncate">{track.artist} • {track.album}</div>
+                              <div className="text-[10px] text-white/40 truncate flex items-center gap-2">
+                                <span>{track.artist} • {track.album}</span>
+                                {track.source === 'jamendo' && <Badge variant="outline" className="px-1 py-0 h-3.5 text-[8px] border-blue-500/30 text-blue-400 bg-blue-500/5">Jamendo MP3</Badge>}
+                                {track.source === 'deezer' && <Badge variant="outline" className="px-1 py-0 h-3.5 text-[8px] border-purple-500/30 text-purple-400 bg-purple-500/5">Deezer Preview</Badge>}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
                                {track.duration > 0 && <span className="text-[10px] font-mono text-white/30">{Math.floor(track.duration / 60)}:{(track.duration % 60).toFixed(0).padStart(2, '0')}</span>}

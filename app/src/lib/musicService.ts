@@ -6,9 +6,11 @@ export interface Album {
   title: string;
   artist: string;
   cover: string;
-  source: 'audius' | 'itunes' | 'youtube';
+  source: 'audius' | 'itunes' | 'youtube' | 'jamendo' | 'deezer';
   year?: string;
 }
+
+const JAMENDO_CLIENT_ID = '50de9141';
 
 export const MusicService = {
   /**
@@ -155,6 +157,153 @@ export const MusicService = {
       return data;
     } catch (e: any) {
       console.error('YouTube Proxy Search failed:', e.message);
+      return [];
+    }
+  },
+
+  /**
+   * Search tracks on Jamendo (Free MP3)
+   */
+  searchJamendoTracks: async (query: string): Promise<Track[]> => {
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&search=${term}&limit=30&include=musicinfo`);
+      const data = await response.json();
+      
+      return (data.results || []).map((song: any) => ({
+        id: generateId(),
+        title: song.name,
+        artist: song.artist_name,
+        album: song.album_name || 'Jamendo Track',
+        duration: song.duration,
+        url: song.audio,
+        cover: song.image || song.album_image || '',
+        isOnline: true,
+        source: 'jamendo'
+      }));
+    } catch (e) {
+      console.error('Jamendo track search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Search albums on Jamendo
+   */
+  searchJamendoAlbums: async (query: string): Promise<Album[]> => {
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`https://api.jamendo.com/v3.0/albums/?client_id=${JAMENDO_CLIENT_ID}&format=json&search=${term}&limit=20`);
+      const data = await response.json();
+      
+      return (data.results || []).map((album: any) => ({
+        id: album.id,
+        title: album.name,
+        artist: album.artist_name,
+        cover: album.image || '',
+        source: 'jamendo',
+        year: album.releasedate?.split('-')[0]
+      }));
+    } catch (e) {
+      console.error('Jamendo album search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Get tracks for a Jamendo album
+   */
+  getJamendoAlbumTracks: async (albumId: string, albumTitle: string): Promise<Track[]> => {
+    try {
+      const response = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&album_id=${albumId}`);
+      const data = await response.json();
+      
+      return (data.results || []).map((song: any) => ({
+        id: generateId(),
+        title: song.name,
+        artist: song.artist_name,
+        album: albumTitle,
+        duration: song.duration,
+        url: song.audio,
+        cover: song.image || song.album_image || '',
+        isOnline: true,
+        source: 'jamendo'
+      }));
+    } catch (e) {
+      console.error('Failed to fetch Jamendo album tracks:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Search tracks on Deezer (30s Previews)
+   */
+  searchDeezerTracks: async (query: string): Promise<Track[]> => {
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`https://api.deezer.com/search?q=${term}&limit=20`);
+      const data = await response.json();
+      
+      return (data.data || []).map((song: any) => ({
+        id: generateId(),
+        title: song.title,
+        artist: song.artist.name,
+        album: song.album.title,
+        duration: song.duration,
+        url: song.preview,
+        cover: song.album.cover_big || song.album.cover_medium || '',
+        isOnline: true,
+        source: 'deezer'
+      }));
+    } catch (e) {
+      console.error('Deezer track search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Search albums on Deezer
+   */
+  searchDeezerAlbums: async (query: string): Promise<Album[]> => {
+    try {
+      const term = encodeURIComponent(query);
+      const response = await fetch(`https://api.deezer.com/search/album?q=${term}&limit=15`);
+      const data = await response.json();
+      
+      return (data.data || []).map((album: any) => ({
+        id: album.id.toString(),
+        title: album.title,
+        artist: album.artist.name,
+        cover: album.cover_big || album.cover_medium || '',
+        source: 'deezer'
+      }));
+    } catch (e) {
+      console.error('Deezer album search failed:', e);
+      return [];
+    }
+  },
+
+  /**
+   * Get tracks for a Deezer album
+   */
+  getDeezerAlbumTracks: async (albumId: string, albumTitle: string): Promise<Track[]> => {
+    try {
+      const response = await fetch(`https://api.deezer.com/album/${albumId}`);
+      const data = await response.json();
+      
+      return (data.tracks?.data || []).map((song: any) => ({
+        id: generateId(),
+        title: song.title,
+        artist: song.artist.name,
+        album: albumTitle,
+        duration: song.duration,
+        url: song.preview,
+        cover: data.cover_big || data.cover_medium || '',
+        isOnline: true,
+        source: 'deezer'
+      }));
+    } catch (e) {
+      console.error('Failed to fetch Deezer album tracks:', e);
       return [];
     }
   }
