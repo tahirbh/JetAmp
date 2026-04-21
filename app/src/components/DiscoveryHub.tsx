@@ -63,25 +63,22 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
         const results = await Promise.allSettled([
           MusicService.searchMP3Albums(searchQuery),
           MusicService.searchJamendoAlbums(searchQuery),
-          MusicService.searchJamendoTracks(searchQuery),
+          // We removed individual tracks to force "Only MP3 Albums" as requested
           MusicService.searchDeezerAlbums(searchQuery),
-          MusicService.searchDeezerTracks(searchQuery)
         ]);
         
         const itunesAlbums = results[0].status === 'fulfilled' ? results[0].value as Album[] : [];
         const jamendoAlbums = results[1].status === 'fulfilled' ? results[1].value as Album[] : [];
-        const jamendoTracks = results[2].status === 'fulfilled' ? results[2].value as Track[] : [];
-        const deezerAlbums = results[3].status === 'fulfilled' ? results[3].value as Album[] : [];
-        const deezerTracks = results[4].status === 'fulfilled' ? results[4].value as Track[] : [];
+        const deezerAlbums = results[2].status === 'fulfilled' ? results[2].value as Album[] : [];
         
         setAlbums([...jamendoAlbums, ...deezerAlbums, ...itunesAlbums]);
-        setTracks([...jamendoTracks, ...deezerTracks]);
+        setTracks([]); // Force clear tracks for MP3 mode
       } else if (currentMode === 'track' || currentMode === 'video') {
         // USE FALLBACK PROXY if not logged in or for best reliability
         if (!user || currentMode === 'video') {
           const results = await MusicService.searchYouTube(searchQuery);
           setTracks(results);
-          setAlbums([]);
+          setAlbums([]); // Force clear albums for Video mode
         } else {
           // Use authenticated YT Music search
           const results = await YouTubeService.searchTracks(searchQuery, 'music');
@@ -204,7 +201,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           <Button 
             size="sm"
             variant={searchMode === 'album' ? 'default' : 'outline'}
-            onClick={() => setSearchMode('album')}
+            onClick={() => {
+              setSearchMode('album');
+              if (query) setTimeout(() => handleSearch(), 0);
+            }}
             className={`clay-btn btn-short ${searchMode === 'album' ? 'clay-btn-active' : ''}`}
             title="Albums"
           >
@@ -213,7 +213,10 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           <Button 
             size="sm"
             variant={searchMode === 'track' ? 'default' : 'outline'}
-            onClick={() => setSearchMode('track')}
+            onClick={() => {
+              setSearchMode('track');
+              if (query) setTimeout(() => handleSearch(), 0);
+            }}
             className={`clay-btn btn-short ${searchMode === 'track' ? 'clay-btn-active' : ''}`}
             title="Songs"
           >
@@ -222,18 +225,26 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           <Button 
             size="sm"
             variant={searchMode === 'video' ? 'default' : 'outline'}
-            onClick={() => setSearchMode('video')}
+            onClick={() => {
+              setSearchMode('video');
+              // FORCE search video from YT
+              if (query) setTimeout(() => handleSearch(), 0);
+            }}
             className={`clay-btn btn-short ${searchMode === 'video' ? 'clay-btn-active' : ''}`}
-            title="Videos"
+            title="Videos from YouTube"
           >
             <Video className="w-5 h-5" />
           </Button>
           <Button 
             size="sm"
             variant={searchMode === 'mp3' ? 'default' : 'outline'}
-            onClick={() => setSearchMode('mp3')}
+            onClick={() => {
+              setSearchMode('mp3');
+              // FORCE it to search only MP3 albums
+              if (query) setTimeout(() => handleSearch(), 0);
+            }}
             className={`clay-btn btn-short ${searchMode === 'mp3' ? 'clay-btn-active' : ''}`}
-            title="MP3 Albums"
+            title="Search MP3 Albums Only"
           >
             <HardDrive className="w-5 h-5" />
           </Button>
