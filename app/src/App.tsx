@@ -659,17 +659,17 @@ function App() {
                  >
                     <div className="relative">
                       <div className="absolute -inset-4 bg-blue-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-pulse"></div>
-                      <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl transform transition-transform group-hover:scale-110 group-active:scale-95">
+                      <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl transform transition-transform group-hover:scale-110 group-active:scale-95 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
                         <img 
-                          src="/banana-player.png" 
+                          src="/jetaudio-deck.png" 
                           className="w-16 h-16 object-contain rounded-xl" 
-                          alt="Nano Banana Player"
+                          alt="JetAudio Multi-Deck Player"
                         />
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white uppercase tracking-tighter shadow-lg">New</div>
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white uppercase tracking-tighter shadow-lg">Hi-Fi</div>
                       </div>
                       <div className="mt-2 text-center">
                          <Badge className="bg-blue-600/20 text-blue-300 text-[8px] border-blue-500/30 uppercase font-black tracking-widest px-2 py-0.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                           Open Discovery
+                           Open DVD / Discovery
                          </Badge>
                       </div>
                     </div>
