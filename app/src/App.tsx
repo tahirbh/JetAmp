@@ -8,13 +8,13 @@ import { URLDialog } from '@/components/URLDialog';
 import { HelpPage } from '@/components/HelpPage';
 import { DiscoveryHub } from '@/components/DiscoveryHub';
 import { SettingsPage } from '@/components/SettingsPage';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Disc2, ListMusic, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SplashScreen } from '@/components/SplashScreen';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { UserGuideModal } from '@/components/UserGuideModal';
 import { LoginModal } from '@/components/LoginModal';
 import { MusicService } from '@/lib/musicService';
+import { ListMusic, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 import type { Track } from '@/types';
 import { generateId } from '@/lib/utils';
@@ -634,51 +634,77 @@ function App() {
            </button>
         </div>
 
-        <div className={`playlist-panel w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex-col overflow-hidden border-l border-[var(--metal-dark)]/30 bg-[var(--bg-panel)]/40 backdrop-blur-md z-40 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'} ${!isPlaylistVisible ? 'playlist-hidden' : ''}`}>
-          <Tabs value={rightPanelTab} onValueChange={(val) => setRightPanelTab(val as any)} className="flex-1 flex flex-col overflow-hidden">
-            <div className="p-2 border-b border-white/5 bg-black/20">
-              <TabsList className="w-full bg-white/5 border border-white/10 h-10 p-1">
-                <TabsTrigger value="playlist" className="flex-1 gap-2 text-xs data-[state=active]:bg-blue-600 transition-all font-bold">
-                  <ListMusic className="w-3 h-3" /> Playlist
-                </TabsTrigger>
-                <TabsTrigger value="discovery" className="flex-1 gap-2 text-xs data-[state=active]:bg-purple-600 transition-all font-bold">
-                  <Disc2 className="w-3 h-3" /> DVD
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <div className="flex-1 overflow-hidden relative">
-              {rightPanelTab === 'playlist' ? (
-                 <CarPlaylist tracks={playlist} currentTrack={currentTrack} onSelectTrack={(t) => { loadTrack(t); play(); }} onRemoveTrack={removeTrack} />
-              ) : (
-                 <DiscoveryHub 
-                   user={user}
-                   currentTrack={currentTrack}
-                   onLoadAlbum={async (tracks) => { 
-                     setPlaylist(tracks); 
-                     setRightPanelTab('playlist');
-                     if (tracks.length > 0) { await loadTrack(tracks[0]); play(); }
-                   }} 
-                   onAddTrack={(t) => {
-                     setPlaylist(prev => {
-                       const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
-                       if (exists) return prev;
-                       return [...prev, t];
-                     });
-                   }}
-                   onPlayTrack={(t) => {
-                     setPlaylist(prev => {
-                       const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
-                       if (exists) return prev;
-                       return [t, ...prev];
-                     });
-                     loadTrack(t); play();
-                      setMobileTab('player'); // auto-switch to player on mobile
-                   }} 
-                   onOpenLogin={() => setIsLoginModalOpen(true)}
+        <div className={`playlist-panel w-full md:w-[26%] lg:w-[26%] xl:w-[28%] h-full flex flex-col overflow-hidden border-l border-[var(--metal-dark)]/30 bg-[var(--bg-panel)]/40 backdrop-blur-md z-40 ${mobileTab !== 'dvd' ? 'hidden md:flex' : 'flex'} ${!isPlaylistVisible ? 'playlist-hidden' : ''}`}>
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            {rightPanelTab === 'playlist' ? (
+               <div className="flex-1 flex flex-col overflow-hidden relative">
+                 <div className="p-4 border-b border-white/5 bg-black/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ListMusic className="w-5 h-5 text-blue-400" />
+                      <h2 className="text-lg font-bold tracking-tight text-blue-50">Local Playlist</h2>
+                    </div>
+                 </div>
+
+                 <CarPlaylist 
+                   tracks={playlist} 
+                   currentTrack={currentTrack} 
+                   onSelectTrack={(t) => { loadTrack(t); play(); }} 
+                   onRemoveTrack={removeTrack} 
                  />
-              )}
-            </div>
-          </Tabs>
+
+                 {/* NANO BANANA MULTIMEDIA STACK TOGGLE */}
+                 <div 
+                   className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 cursor-pointer group"
+                   onClick={() => setRightPanelTab('discovery')}
+                 >
+                    <div className="relative">
+                      <div className="absolute -inset-4 bg-blue-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-pulse"></div>
+                      <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 p-1.5 rounded-2xl shadow-2xl transform transition-transform group-hover:scale-110 group-active:scale-95">
+                        <img 
+                          src="/banana-player.png" 
+                          className="w-16 h-16 object-contain rounded-xl" 
+                          alt="Nano Banana Player"
+                        />
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-full text-white uppercase tracking-tighter shadow-lg">New</div>
+                      </div>
+                      <div className="mt-2 text-center">
+                         <Badge className="bg-blue-600/20 text-blue-300 text-[8px] border-blue-500/30 uppercase font-black tracking-widest px-2 py-0.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                           Open Discovery
+                         </Badge>
+                      </div>
+                    </div>
+                 </div>
+               </div>
+            ) : (
+               <DiscoveryHub 
+                 user={user}
+                 currentTrack={currentTrack}
+                 onClose={() => setRightPanelTab('playlist')}
+                 onLoadAlbum={async (tracks) => { 
+                   setPlaylist(tracks); 
+                   setRightPanelTab('playlist');
+                   if (tracks.length > 0) { await loadTrack(tracks[0]); play(); }
+                 }} 
+                 onAddTrack={(t) => {
+                   setPlaylist(prev => {
+                     const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
+                     if (exists) return prev;
+                     return [...prev, t];
+                   });
+                 }}
+                 onPlayTrack={(t) => {
+                   setPlaylist(prev => {
+                     const exists = prev.some(item => item.id === t.id || (item.title === t.title && item.artist === t.artist));
+                     if (exists) return prev;
+                     return [t, ...prev];
+                   });
+                   loadTrack(t); play();
+                    setMobileTab('player'); // auto-switch to player on mobile
+                 }} 
+                 onOpenLogin={() => setIsLoginModalOpen(true)}
+               />
+            )}
+          </div>
         </div>
 
         <div className="hidden md:block md:w-[15%] lg:w-[18%] xl:w-[20%] h-full overflow-hidden speaker-column">
@@ -713,7 +739,7 @@ function App() {
           <span className="text-[10px] font-bold uppercase tracking-widest">Player</span>
         </button>
         <button onClick={() => setMobileTab('dvd')} className={`flex flex-col items-center gap-1 transition-all ${mobileTab === 'dvd' ? 'text-purple-400' : 'text-gray-500'}`}>
-          <div className={`p-1.5 rounded-lg ${mobileTab === 'dvd' ? 'bg-purple-400/20' : ''}`}> <Disc2 className="w-5 h-5" /> </div>
+          <div className={`p-1.5 rounded-lg ${mobileTab === 'dvd' ? 'bg-purple-400/20' : ''}`}> <Search className="w-5 h-5" /> </div>
           <span className="text-[10px] font-bold uppercase tracking-widest">Discovery</span>
         </button>
       </div>

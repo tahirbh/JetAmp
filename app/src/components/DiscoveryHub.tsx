@@ -17,9 +17,13 @@ interface DiscoveryHubProps {
   onAddTrack: (track: Track) => void;
   onPlayTrack: (track: Track) => void;
   onOpenLogin: () => void;
+  onClose?: () => void;
 }
 
-export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPlayTrack, onOpenLogin }: DiscoveryHubProps) {
+export function DiscoveryHub({ 
+  user, currentTrack, onLoadAlbum, onAddTrack, 
+  onPlayTrack, onOpenLogin, onClose 
+}: DiscoveryHubProps) {
   const [query, setQuery] = useState('modrec');
   const [searchMode, setSearchMode] = useState<'album' | 'track' | 'video' | 'mp3'>('video');
   const [loading, setLoading] = useState(false);
@@ -170,7 +174,17 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
             <h2 className="text-lg font-bold tracking-tight text-blue-50">Discovery Hub</h2>
             <p className="text-xs text-blue-300/60 font-medium">YouTube & Online Content</p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+             {onClose && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="text-[10px] text-blue-400 hover:text-blue-300 uppercase font-black tracking-widest px-2 h-7 bg-blue-500/10"
+                  onClick={onClose}
+                >
+                  ← Playlist
+                </Button>
+             )}
              {user ? (
                <Button 
                  size="sm" 
