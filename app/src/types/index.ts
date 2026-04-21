@@ -8,6 +8,7 @@ export interface Track {
   cover?: string;
   path?: string;
   isOnline?: boolean;
+  previewUrl?: string;
   source?: 'local' | 'deezer' | 'spotify' | 'youtube' | 'audius' | 'itunes' | 'network' | 'jamendo';
 }
 

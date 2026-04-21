@@ -97,7 +97,8 @@ export const MusicService = {
 
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=20`);
+      const targetUrl = encodeURIComponent(`https://itunes.apple.com/search?term=${term}&entity=album&limit=20`);
+      const response = await fetch(`/api/itunes-proxy?url=${targetUrl}`);
       const data = await response.json();
       
       return (data.results || []).map((album: any) => ({
@@ -119,7 +120,8 @@ export const MusicService = {
    */
   getMP3AlbumTracks: async (album: Album): Promise<Track[]> => {
     try {
-      const response = await fetch(`https://itunes.apple.com/lookup?id=${album.id}&entity=song`);
+      const targetUrl = encodeURIComponent(`https://itunes.apple.com/lookup?id=${album.id}&entity=song`);
+      const response = await fetch(`/api/itunes-proxy?url=${targetUrl}`);
       const data = await response.json();
       
       // First item is the album, rest are songs
@@ -133,6 +135,7 @@ export const MusicService = {
         duration: song.trackTimeMillis / 1000,
         // RESOLVE: We use a search hint for our player to resolve the actual stream
         url: `itunes-resolve:${song.artistName} - ${song.trackName}`, 
+        previewUrl: song.previewUrl,
         cover: album.cover,
         isOnline: true,
         source: 'itunes' 
@@ -167,7 +170,8 @@ export const MusicService = {
   searchJamendoTracks: async (query: string): Promise<Track[]> => {
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&search=${term}&limit=30&include=musicinfo`);
+      // Using namesearch instead of search for better relevance on Jamendo
+      const response = await fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&namesearch=${term}&limit=30&include=musicinfo&has_audio=true`);
       const data = await response.json();
       
       return (data.results || []).map((song: any) => ({
@@ -193,7 +197,7 @@ export const MusicService = {
   searchJamendoAlbums: async (query: string): Promise<Album[]> => {
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://api.jamendo.com/v3.0/albums/?client_id=${JAMENDO_CLIENT_ID}&format=json&search=${term}&limit=20`);
+      const response = await fetch(`https://api.jamendo.com/v3.0/albums/?client_id=${JAMENDO_CLIENT_ID}&format=json&namesearch=${term}&limit=20`);
       const data = await response.json();
       
       return (data.results || []).map((album: any) => ({
@@ -241,7 +245,8 @@ export const MusicService = {
   searchDeezerTracks: async (query: string): Promise<Track[]> => {
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://api.deezer.com/search?q=${term}&limit=20`);
+      const targetUrl = encodeURIComponent(`https://api.deezer.com/search?q=${term}&limit=20`);
+      const response = await fetch(`/api/deezer-proxy?url=${targetUrl}`);
       const data = await response.json();
       
       return (data.data || []).map((song: any) => ({
@@ -250,7 +255,9 @@ export const MusicService = {
         artist: song.artist.name,
         album: song.album.title,
         duration: song.duration,
-        url: song.preview,
+        // RESOLVE: Use a hint to find full track
+        url: `deezer-resolve:${song.artist.name} - ${song.title}`,
+        previewUrl: song.preview,
         cover: song.album.cover_big || song.album.cover_medium || '',
         isOnline: true,
         source: 'deezer'
@@ -267,7 +274,8 @@ export const MusicService = {
   searchDeezerAlbums: async (query: string): Promise<Album[]> => {
     try {
       const term = encodeURIComponent(query);
-      const response = await fetch(`https://api.deezer.com/search/album?q=${term}&limit=15`);
+      const targetUrl = encodeURIComponent(`https://api.deezer.com/search/album?q=${term}&limit=15`);
+      const response = await fetch(`/api/deezer-proxy?url=${targetUrl}`);
       const data = await response.json();
       
       return (data.data || []).map((album: any) => ({
@@ -288,16 +296,19 @@ export const MusicService = {
    */
   getDeezerAlbumTracks: async (albumId: string, albumTitle: string): Promise<Track[]> => {
     try {
-      const response = await fetch(`https://api.deezer.com/album/${albumId}`);
+      const targetUrl = encodeURIComponent(`https://api.deezer.com/album/${albumId}`);
+      const response = await fetch(`/api/deezer-proxy?url=${targetUrl}`);
       const data = await response.json();
       
       return (data.tracks?.data || []).map((song: any) => ({
         id: generateId(),
         title: song.title,
         artist: song.artist.name,
-        album: albumTitle,
+        album: song.albumTitle || albumTitle,
         duration: song.duration,
-        url: song.preview,
+        // RESOLVE: Use a hint to find full track
+        url: `deezer-resolve:${song.artist.name} - ${song.title}`,
+        previewUrl: song.preview,
         cover: data.cover_big || data.cover_medium || '',
         isOnline: true,
         source: 'deezer'

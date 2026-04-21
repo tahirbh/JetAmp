@@ -257,20 +257,41 @@ function App() {
       return;
     }
     
-    // 2. iTunes Tracks need Stream Resolution (finding a playable Audio URL)
+    // 2. iTunes/Deezer Tracks need Stream Resolution (finding a playable Audio URL)
     let playableUrl = track.url;
-    if (track.source === 'itunes' && track.url?.startsWith('itunes-resolve:')) {
-      const query = track.url.replace('itunes-resolve:', '');
+    if ((track.source === 'itunes' || track.source === 'deezer') && track.url?.includes('-resolve:')) {
+      const query = track.url.split('-resolve:')[1];
+      
       try {
-        const results = await MusicService.searchTracks(query);
-        if (results && results.length > 0) {
-          playableUrl = results[0].url;
-          // Update the original track object so we don't resolve it again next time
-          track.url = playableUrl;
-          if (!track.duration) track.duration = results[0].duration;
+        console.log(`Resolving full track for: ${query}`);
+        // Try Audius first (API is fast and gives direct MP3s)
+        const audiusResults = await MusicService.searchTracks(query);
+        if (audiusResults && audiusResults.length > 0) {
+          playableUrl = audiusResults[0].url;
+          track.url = playableUrl; // Update original so we don't resolve again
+          if (audiusResults[0].duration) track.duration = audiusResults[0].duration;
+        } else {
+          // Fallback to YouTube Search Proxy
+          const ytResults = await MusicService.searchYouTube(query);
+          if (ytResults && ytResults.length > 0) {
+            // Found a YouTube match - we'll treat it as a YouTube source now
+            track.source = 'youtube';
+            track.url = ytResults[0].url;
+            track.id = ytResults[0].id;
+            track.duration = ytResults[0].duration as any; // YouTube dur is string usually or handled by component
+            setCurrentTrack(track);
+            setIsPlaying(true);
+            return;
+          }
         }
       } catch (e) {
-        console.error('Failed to resolve iTunes stream:', e);
+        console.error('Resolution failed, falling back to preview:', e);
+        playableUrl = track.previewUrl || '';
+      }
+      
+      // If resolution still resulted in no playable URL, use preview
+      if (!playableUrl || playableUrl.includes('-resolve:')) {
+        playableUrl = track.previewUrl || '';
       }
     }
 

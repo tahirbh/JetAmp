@@ -60,7 +60,7 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           })));
         }
       } else if (currentMode === 'mp3') {
-        const [itunesResults, jamendoResults, jamendoTracks, deezerResults, deezerTracks] = await Promise.all([
+        const results = await Promise.allSettled([
           MusicService.searchMP3Albums(searchQuery),
           MusicService.searchJamendoAlbums(searchQuery),
           MusicService.searchJamendoTracks(searchQuery),
@@ -68,7 +68,13 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
           MusicService.searchDeezerTracks(searchQuery)
         ]);
         
-        setAlbums([...jamendoResults, ...deezerResults, ...itunesResults]);
+        const itunesAlbums = results[0].status === 'fulfilled' ? results[0].value as Album[] : [];
+        const jamendoAlbums = results[1].status === 'fulfilled' ? results[1].value as Album[] : [];
+        const jamendoTracks = results[2].status === 'fulfilled' ? results[2].value as Track[] : [];
+        const deezerAlbums = results[3].status === 'fulfilled' ? results[3].value as Album[] : [];
+        const deezerTracks = results[4].status === 'fulfilled' ? results[4].value as Track[] : [];
+        
+        setAlbums([...jamendoAlbums, ...deezerAlbums, ...itunesAlbums]);
         setTracks([...jamendoTracks, ...deezerTracks]);
       } else if (currentMode === 'track' || currentMode === 'video') {
         // USE FALLBACK PROXY if not logged in or for best reliability
@@ -296,15 +302,22 @@ export function DiscoveryHub({ user, currentTrack, onLoadAlbum, onAddTrack, onPl
                           {album.cover && (
                             <img src={album.cover} alt={album.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
                           )}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            {album.source === 'jamendo' || album.source === 'deezer' ? (
-                               <div className="flex flex-col items-center">
-                                 <Music className="w-8 h-8 text-white animate-pulse" />
-                                 <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400 mt-1">{album.source}</span>
-                               </div>
-                            ) : (
-                               <Music className="w-8 h-8 text-white animate-pulse" />
+                          
+                          {/* Always visible source badge on top right */}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+                            {album.source === 'jamendo' && (
+                              <Badge className="bg-blue-600/80 hover:bg-blue-600 text-[8px] font-black uppercase tracking-tighter px-1.5 h-4 border-none shadow-lg backdrop-blur-md">Jamendo</Badge>
                             )}
+                            {album.source === 'deezer' && (
+                              <Badge className="bg-purple-600/80 hover:bg-purple-600 text-[8px] font-black uppercase tracking-tighter px-1.5 h-4 border-none shadow-lg backdrop-blur-md">Deezer</Badge>
+                            )}
+                            {album.source === 'itunes' && (
+                              <Badge className="bg-pink-600/80 hover:bg-pink-600 text-[8px] font-black uppercase tracking-tighter px-1.5 h-4 border-none shadow-lg backdrop-blur-md">iTunes</Badge>
+                            )}
+                          </div>
+
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                             <Music className="w-8 h-8 text-white animate-pulse" />
                           </div>
                         </div>
                         <div className="px-1">
