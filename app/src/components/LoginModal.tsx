@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Footer */}
         <div className="p-6 bg-white/[0.01] border-t border-white/5 text-center">
             <p className="text-[10px] font-black text-gray-600 tracking-widest uppercase">
-              Disco Aura • Experimental Hi-Fi Player v1.0.5
+              Disco Aura • Experimental Hi-Fi Player v1.0.6
             </p>
         </div>
       </div>

@@ -177,7 +177,7 @@ export function TopMenu({
 
         <div className="ml-auto flex items-center pr-4 gap-2">
             <Music className="w-4 h-4 text-[var(--glow-cyan)] animate-pulse" />
-            <span className="text-[10px] sm:text-xs font-black rainbow-text tracking-[0.2em] uppercase">Disco Aura Hi-Fi v1.0.5</span>
+            <span className="text-[10px] sm:text-xs font-black rainbow-text tracking-[0.2em] uppercase">Disco Aura Hi-Fi v1.0.6</span>
         </div>
       </Menubar>
     </div>
